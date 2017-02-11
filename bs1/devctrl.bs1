@@ -1,0 +1,119 @@
+' {$STAMP BS1}
+' {$PBASIC 1.0}
+
+' This program waits for the character "X" followed by a
+' binary byte at the serial input (inverted, 2400 baud, N81).
+
+SYMBOL  sym_cmd_null        = 0 ' do nothing
+SYMBOL  sym_cmd_srv1        = 1 ' send pulse to servo 1
+SYMBOL  sym_cmd_srv2        = 2 ' send pulse to servo 2
+SYMBOL  sym_cmd_fire        = 3 ' send pulse to fire pin
+
+SYMBOL  sym_baud            = T2400 ' use highest baud rate
+
+SYMBOL  sym_servo_min       = 56  ' 0.56ms pulse
+SYMBOL  sym_servo_max       = 234 ' 2.32ms pulse
+SYMBOL  sym_servo_return_ct = 25  ' iterations for full servo movement
+SYMBOL  sym_servo_gap_time  = 50  ' ms (time for power supply to adjust)
+SYMBOL  sym_servo_scale     = 712 ' conversion is ((val - 'a') * 712) / 100) + min
+SYMBOL  sym_servo_div       = 100 ' divisor from above formula
+
+SYMBOL  sym_fire_pulse_time = 100 ' 1ms
+
+SYMBOL  b0_cmd              = B0
+SYMBOL  b1_val              = B1
+SYMBOL  b2_ack              = B2
+SYMBOL  b3_cmd_index        = B3
+SYMBOL  w2_param            = W2  ' B4 B5
+
+SYMBOL  npin_o_fire         = 1 ' fire logic pulse (active low)
+SYMBOL  npin_o_servo1       = 2 ' servo 1
+SYMBOL  npin_o_servo2       = 3 ' servo 2
+SYMBOL  npin_i_stx          = 4 ' serial output
+SYMBOL  npin_i_srx          = 5 ' serial input
+
+
+main:
+
+  ' initialize outputs
+  ' fire logic is active low so start high to disable
+  HIGH npin_o_fire
+  LOW npin_o_servo1
+  LOW npin_o_servo2
+
+  ' drive servos to minimum settings
+  ' alternate to avoid excessive power hit
+  w2_param = sym_servo_min
+  FOR b0_cmd = 1 TO sym_servo_return_ct:
+    GOSUB sr_pulse_servo1
+    GOSUB sr_pulse_servo2
+  NEXT
+
+  ' initialize command, value, and ack for power-up message
+  b0_cmd = "0"
+  b1_val = "a"
+  b2_ack = "p"
+
+cmd_loop:
+
+  ' send ACK/NAK (also power-up message)
+  ' reset ack character since default is success
+  SEROUT npin_i_stx, sym_baud, (b2_ack, b0_cmd, b1_val)
+  b2_ack = "a"
+
+  ' wait for command
+  SERIN npin_i_srx, sym_baud, ("x"), b0_cmd, b1_val
+
+  IF b0_cmd < "0" THEN cmd_nak  ' cmd is 0-3
+  IF b0_cmd > "3" THEN cmd_nak
+  IF b1_val < "a" THEN cmd_nak  ' value is a-y (25 levels)
+  IF b1_val > "y" THEN cmd_nak
+
+  ' convert value to a servo position even if not needed
+  w2_param = b1_val - "a"
+  w2_param = w2_param * sym_servo_scale / sym_servo_div + sym_servo_min
+
+  ' then determine command index and branch to command
+  b3_cmd_index = b0_cmd - "0"
+  BRANCH b3_cmd_index, (cmd_exec_null, cmd_exec_srv1, cmd_exec_srv2, cmd_exec_fire)
+  GOTO cmd_loop
+
+cmd_nak:
+  b2_ack = "n"
+  GOTO cmd_loop
+
+'-------------------------------------------------------------------
+
+cmd_exec_null:
+  GOTO cmd_loop
+
+' send pulses to command servos to new position
+' many commands may be needed to move the servo to final position
+
+cmd_exec_srv1:
+  GOSUB sr_pulse_servo1
+  GOTO cmd_loop
+
+cmd_exec_srv2:
+  GOSUB sr_pulse_servo2
+  GOTO cmd_loop
+
+' send out fire pulse
+' the fire logic will timeout and turn off if pulse is not received
+' command must be sent repeatedly to keep fire output enabled
+cmd_exec_fire:
+  PULSOUT npin_o_fire, sym_fire_pulse_time
+  GOTO cmd_loop
+
+
+'-------------------------------------------------------------------
+
+sr_pulse_servo1:
+  PULSOUT npin_o_servo1, w2_param
+  PAUSE sym_servo_gap_time
+  RETURN
+
+sr_pulse_servo2:
+  PULSOUT npin_o_servo2, w2_param
+  PAUSE sym_servo_gap_time
+  RETURN
