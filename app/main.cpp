@@ -30,65 +30,65 @@ const int RUNTIME_INH = 30;
 const int STARTUP_INH = 20;
 
 
-class EyeBounce
+class MissedDetectionTrigger
 {
 public:
-    EyeBounce();
-    virtual ~EyeBounce();
+    MissedDetectionTrigger();
+    virtual ~MissedDetectionTrigger();
     
     bool update(bool f);
-    int getCount() const;
-    int getInhibit() const;
+    int getMissCount() const;
+    int getInhibitCt() const;
     void reset(const int n = EYE_LOST_CT,
                const int inh = RUNTIME_INH);
     
 private:
-    int m_n;
-    int m_nmax;
-    int m_inh;
-    bool m_f;
+    int miss_ct;
+    int max_miss_ct;
+    int inhibit_ct;
+    bool is_triggered;
 };
 
-EyeBounce::EyeBounce()
+MissedDetectionTrigger::MissedDetectionTrigger()
 {
     // initialize with startup inhibit count
     reset(EYE_LOST_CT, STARTUP_INH);
 }
 
-EyeBounce::~EyeBounce()
+MissedDetectionTrigger::~MissedDetectionTrigger()
 {
 }
 
-int EyeBounce::getInhibit() const
+int MissedDetectionTrigger::getInhibitCt() const
 {
     // return number of inhibit frames remaining
-    return m_inh;
+    return inhibit_ct;
 }
 
-int EyeBounce::getCount() const
+int MissedDetectionTrigger::getMissCount() const
 {
     // return number of sequential frames
     // with missed eye detections
-    return m_n;
+    return miss_ct;
 }
 
-void EyeBounce::reset(const int n, const int inh)
+void MissedDetectionTrigger::reset(const int n, const int inh)
 {
     // start with eyes found
     // and inhibit mode enabled
-    m_n = 0;
-    m_nmax = n;
-    m_inh = inh;
-    m_f = true;
+    miss_ct = 0;
+    max_miss_ct = n;
+    inhibit_ct = inh;
+    is_triggered = true;
 }
 
-bool EyeBounce::update(bool f)
+bool MissedDetectionTrigger::update(bool f)
 {
-    if (m_inh > 0)
+    if (inhibit_ct > 0)
     {
         // decrement inhibit mode frame counter
         // do nothing until inhibit period is over
-        m_inh--;
+        inhibit_ct--;
     }
     else
     {
@@ -96,20 +96,20 @@ bool EyeBounce::update(bool f)
         if (f)
         {
             // eyes found so reset
-            m_n = 0;
-            m_f = true;
+            miss_ct = 0;
+            is_triggered = true;
         }
         else
         {
             // eyes not found
             // so increment counter
             // see if this has happened too many times
-            if (m_n < m_nmax)
+            if (miss_ct < max_miss_ct)
             {
-                m_n++;
-                if (m_n == m_nmax)
+                miss_ct++;
+                if (miss_ct == max_miss_ct)
                 {
-                    m_f = false;
+                    is_triggered = false;
                 }
             }
         }
@@ -117,12 +117,12 @@ bool EyeBounce::update(bool f)
     
     // true if eyes were found
     // false if eyes were lost
-    return m_f;
+    return is_triggered;
 }
 
 
 // create a global eye bounce object
-EyeBounce ebx;
+MissedDetectionTrigger ebx;
 String path = "~/work/cpox/";
 String pathx = "~/work/cpox/movie/";
 
@@ -316,7 +316,7 @@ int main(int argc, char** argv)
             // check inhibit counter
             // non-zero means it was triggered
             // and inhibit period is active
-            inh = ebx.getInhibit();
+            inh = ebx.getInhibitCt();
             if (prev_inh == 0 && inh > 0)
             {
                 // action (and inhibit) has been triggered
@@ -337,7 +337,7 @@ int main(int argc, char** argv)
             {
                 // during normal operation (no inhibit)
                 // show warning color if eye-miss count is high
-                ct = ebx.getCount();
+                ct = ebx.getMissCount();
                 if (ct > EYE_WARN_CT)
                     sbox = syellow;
                 else
