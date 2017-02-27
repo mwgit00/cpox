@@ -27,6 +27,12 @@
     <ClInclude Include="MissedDetectionTrigger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FaceInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="defs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -36,6 +42,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MissedDetectionTrigger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FaceInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
