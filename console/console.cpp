@@ -14,6 +14,9 @@
 #include <string>
 #include <iomanip>
 
+#include <ctime>
+#include <chrono>
+
 #include "defs.h"
 #include "FaceInfo.h"
 #include "MissedDetectionTrigger.h"
@@ -26,13 +29,13 @@ CascadeClassifier cc_face;
 CascadeClassifier cc_eyes;
 CascadeClassifier cc_grin;
 
-const int EYE_LOST_CT = 30;
-const int EYE_WARN_CT = 15;
-const int RUNTIME_INH = 30;
-const int STARTUP_INH = 20;
+const double EYE_MISS_CT_MS = 3000.0;
+const double EYE_WARN_CT_MS = 2000.0;
+const double RUNTIME_INH_MS = 5000.0;
+const double STARTUP_INH_MS = 8000.0;
 
 
-// global eye bounce object
+// global detection and inhibit timer object
 MissedDetectionTrigger ebx;
 
 String haar_cascade_path = "C:\\opencv-3.2.0\\opencv\\build\\etc\\haarcascades\\";
@@ -40,7 +43,7 @@ String path = "~/work/cpox/";
 String pathx = "~/work/cpox/movie/";
 
 
-void detect(const Mat& r, FaceInfo& rFaceInfo)
+bool detect(const Mat& r, FaceInfo& rFaceInfo)
 {
     std::vector<Rect> obj_face;
     std::vector<Rect> obj_eyeL;
@@ -108,8 +111,8 @@ void detect(const Mat& r, FaceInfo& rFaceInfo)
             int magic = 0;
             
             Mat grinROI = r(rFaceInfo.rect_grin_roi);
-            int w = (rFaceInfo.rect_grin_roi.width * 3) / 8;  // min 3/8 of mouth region width
-            int h = (rFaceInfo.rect_grin_roi.height * 1) / 3;  // min 1/3 of mouth region height
+            int w = (grinROI.size().width * 3) / 8;  // min 3/8 of mouth region width
+            int h = (grinROI.size().height * 1) / 3;  // min 1/3 of mouth region height
             cc_grin.detectMultiScale(grinROI, rFaceInfo.obj_grin, grin_scale_factor, magic, 0, Size(w, h));
 
             // this statement controls whether or not grin
@@ -125,11 +128,7 @@ void detect(const Mat& r, FaceInfo& rFaceInfo)
         }
     }
 
-    // reset eye bounce if too many frames without eyes
-    if (ebx.update(bFound))
-    {
-        ebx.reset(EYE_LOST_CT, RUNTIME_INH);
-    }
+    return bFound;
 }
 
 
@@ -147,7 +146,6 @@ int main(int argc, char** argv)
     String face_cascade_name = "haarcascade_frontalface_alt.xml";
     String eyes_cascade_name = "haarcascade_eye_tree_eyeglasses.xml";
     String grin_cascade_name = "haarcascade_smile.xml";
-    //    String grin_cascade_name = "haarcascade_mcs_mouth.xml";
 
     if (!cc_face.load(haar_cascade_path + face_cascade_name))
     {
@@ -178,11 +176,10 @@ int main(int argc, char** argv)
 
     char key;
     float img_scale = 0.5;
-    int prev_inh = STARTUP_INH;
     ostringstream oss;
 
-    // start with warning color
-    Scalar sca_box = SCA_YELLOW_MED;
+    // start with "grayed out" countdown box
+    Scalar sca_box = SCA_GRAY;
 
     bool record = false;
     bool go = false;
@@ -190,15 +187,17 @@ int main(int argc, char** argv)
 
     FaceInfo face_info;
 
-    // initialize with startup inhibit count
-    ebx.reset(EYE_LOST_CT, STARTUP_INH);
+    // frame rate time points
+    std::chrono::time_point<std::chrono::steady_clock> t_prev =
+        std::chrono::high_resolution_clock::now();
+    std::chrono::time_point<std::chrono::steady_clock> t_curr;
 
     while (1)
     {
         Mat img;
         Mat img_small;
         Mat img_gray;
-        int inh = 0;
+        int inh_seconds = 0;
         int ct = 0;
 
         // grab image, downsize, convert to gray
@@ -207,39 +206,41 @@ int main(int argc, char** argv)
         resize(img, img_small, Size(), img_scale, img_scale);
         cvtColor(img_small, img_gray, COLOR_BGR2GRAY);
 
+        // run the detection with the current options
+        bool bFound = detect(img_gray, face_info);
+
         // enable
         if (go)
         {
-            // mask will have face and eye boxes
-            detect(img_gray, face_info);
+            ebx.update(bFound);
 
-            // check inhibit counter
-            // non-zero means it was triggered
-            // and inhibit period is active
-            inh = ebx.getInhibitCt();
-            
-            if ((prev_inh == 0) && (inh > 0))
+            // handle the one-shot events...
+            if (ebx.isTriggered())
             {
-                // action (and inhibit) has been triggered
+                // loss-of-detection has been triggered
                 external_action(true);
                 sca_box = SCA_RED_MED;
             }
-            else if ((prev_inh > 0) && (inh == 0))
+            else if (ebx.isDetecting())
             {
-                // action (and inhibit) has completed
+                // inhibit has completed
+                // use runtime timing parameters
+                ebx.set(EYE_MISS_CT_MS, RUNTIME_INH_MS);
                 external_action(false);
                 sca_box = SCA_BLACK;
             }
-            else if (inh > 0)
+
+            inh_seconds = ebx.getInhibitSecondsRemaining();
+
+            if (inh_seconds > 0)
             {
                 // TODO:  external action disable at specific count
             }
-            else if (inh == 0)
+            else
             {
                 // during normal operation (no inhibit)
                 // show warning color if eye-miss count is high
-                ct = ebx.getMissCount();
-                if (ct > EYE_WARN_CT)
+                if (ebx.getDetectMsecRemaining() < EYE_WARN_CT_MS)
                 {
                     sca_box = SCA_YELLOW_MED;
                 }
@@ -248,22 +249,21 @@ int main(int argc, char** argv)
                     sca_box = SCA_BLACK;
                 }
             }
-            prev_inh = inh;
 
-            // draw face features back into source image
-            face_info.rgb_draw_boxes(img_small);
-            
-            // @TODO -- figure out reliable "smile metric"
-            cout << face_info.obj_grin.size() << endl;
-
-            // draw inhibit countdown value in upper left
-            // along with status color
-            oss << inh;
-            rectangle(img_small, Rect(0, 0, 50, 20), sca_box, CV_FILLED);
-            rectangle(img_small, Rect(0, 0, 50, 20), SCA_WHITE);
-            putText(img_small, oss.str(), Point(10, 14), FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
-            oss.str("");
         }
+
+        // @TODO -- figure out reliable "smile metric"
+        cout << face_info.obj_grin.size() << endl;
+
+        // draw inhibit countdown value in upper left with status color
+        oss << inh_seconds;
+        rectangle(img_small, Rect(0, 0, 50, 20), sca_box, CV_FILLED);
+        rectangle(img_small, Rect(0, 0, 50, 20), SCA_WHITE);
+        putText(img_small, oss.str(), Point(10, 14), FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
+        oss.str("");
+
+        // draw face features back into source image
+        face_info.rgb_draw_boxes(img_small);
 
         imshow(window_name, img_small);
         
@@ -287,12 +287,43 @@ int main(int argc, char** argv)
         else if (key == 'g')
         {
             // start actively monitoring face
+            // use startup timing parameters
+            sca_box = SCA_YELLOW_MED;
+            ebx.set(EYE_MISS_CT_MS, STARTUP_INH_MS);
+            ebx.start();
             go = true;
+        }
+        else if (key == 'h')
+        {
+            // stop actively monitoring face
+            external_action(false);
+            sca_box = SCA_GRAY;
+            inh_seconds = 0;
+            ebx.reset();
+            go = false;
+        }
+        else if (key == ':')
+        {
+            // toggle eyes detection
+            face_info.is_eyes_enabled = !face_info.is_eyes_enabled;
+        }
+        else if (key == ')')
+        {
+            // toggle grin detection
+            face_info.is_grin_enabled = !face_info.is_grin_enabled;
         }
         else if (key == '.')
         {
             record = true;
         }
+
+#if 0
+        t_curr = std::chrono::high_resolution_clock::now();
+        double x = std::chrono::duration<double>(t_curr - t_prev).count();
+        int fr = static_cast<int>((1.0 / x) + 0.5);
+        cout << fr << endl;
+        t_prev = t_curr;
+#endif
     }
 
     // loop was terminated
