@@ -16,10 +16,12 @@
 
 #include <ctime>
 #include <chrono>
+#include <thread>
 
 #include "defs.h"
 #include "FaceInfo.h"
 #include "MissedDetectionTrigger.h"
+#include "PolledTimer.h"
 
 using namespace std;
 using namespace cv;
@@ -141,6 +143,22 @@ void external_action(const bool f)
 int main(int argc, char** argv)
 {
     cout << "CPOX CONSOLE" << endl;
+
+#if 0
+    PolledTimer tmr;
+    tmr.start(5);
+    while (true)
+    {
+        cout << tmr.sec() << endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        int n;
+        tmr.update(n);
+        if (n == 0)
+        {
+            break;
+        }
+    }
+#endif
     
     String window_name = "Cam";
     String face_cascade_name = "haarcascade_frontalface_alt.xml";
