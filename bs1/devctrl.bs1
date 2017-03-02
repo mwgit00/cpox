@@ -86,10 +86,14 @@ cmd_nak:
 
 '-------------------------------------------------------------------
 
+' can be used to ping the unit and see if its responsive
+' reports maximum of current servo settings
 cmd_exec_status:
-
+  IF b6_val_1 > b7_val_2 THEN cmd_exec_status_1_gt_2
+  b1_val = b7_val_2
+  GOTO cmd_loop
 cmd_exec_status_1_gt_2:
-  b1_val
+  b1_val = b6_val_1
   GOTO cmd_loop
 
 ' send pulses to command servos to new position
