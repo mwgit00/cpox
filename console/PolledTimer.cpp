@@ -4,8 +4,8 @@
 
 PolledTimer::PolledTimer() :
     tp_later(),
-    _seconds_remaining(0),
-    _maxsec(0)
+    _seconds_remaining(0u),
+    _maxsec(0u)
 {
 }
 
@@ -16,23 +16,24 @@ PolledTimer::~PolledTimer()
 void PolledTimer::stop(void)
 {
     // puts timer into stopped state
-    _seconds_remaining = 0;
+    _seconds_remaining = 0u;
 }
 
-int PolledTimer::sec(void) const
+uint32_t PolledTimer::sec(void) const
 {
     // returns seconds remaining as of last update
 
     return _seconds_remaining;
 }
 
-void PolledTimer::start(const int n_seconds)
+void PolledTimer::start(const uint32_t n_seconds)
 {
     // starts a timer
     // expiration time is relative to current steady time
     
     // apply allowed bounds on time interval
-    int checked_seconds = std::min(MAX_INTERVAL, std::max(n_seconds, MIN_INTERVAL));
+    uint32_t checked_seconds =
+        std::min<uint32_t>(MAX_INTERVAL, std::max<uint32_t>(n_seconds, MIN_INTERVAL));
 
     // set expiration time in the future
     std::chrono::time_point<std::chrono::steady_clock> tp_now =
@@ -44,7 +45,7 @@ void PolledTimer::start(const int n_seconds)
     _maxsec = n_seconds;
 }
 
-bool PolledTimer::update(int& n_seconds_remaning)
+bool PolledTimer::update(uint32_t& n_seconds_remaning)
 {
     // services the timer
     // call this routine in a fast polling loop.
@@ -52,7 +53,7 @@ bool PolledTimer::update(int& n_seconds_remaning)
     // passes back time remaining rounded up to nearest second
 
     bool result = false;
-    if (_seconds_remaining != 0)
+    if (_seconds_remaining != 0u)
     {
         std::chrono::time_point<std::chrono::steady_clock> tp_now =
             std::chrono::high_resolution_clock::now();
@@ -61,7 +62,7 @@ bool PolledTimer::update(int& n_seconds_remaning)
         {
             // set seconds remaining to 0 to disable timer
             // issue "one-shot" flag for expiration
-            _seconds_remaining = 0;
+            _seconds_remaining = 0u;
             result = true;
         }
         else

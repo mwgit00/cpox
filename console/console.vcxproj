@@ -152,16 +152,24 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AppMain.h" />
+    <ClInclude Include="CVMain.h" />
     <ClInclude Include="defs.h" />
     <ClInclude Include="FaceInfo.h" />
+    <ClInclude Include="FSMEvent.h" />
+    <ClInclude Include="FSMLoop.h" />
     <ClInclude Include="MissedDetectionTrigger.h" />
     <ClInclude Include="PolledTimer.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AppMain.cpp" />
     <ClCompile Include="console.cpp" />
+    <ClCompile Include="CVMain.cpp" />
     <ClCompile Include="FaceInfo.cpp" />
+    <ClCompile Include="FSMEvent.cpp" />
+    <ClCompile Include="FSMLoop.cpp" />
     <ClCompile Include="MissedDetectionTrigger.cpp" />
     <ClCompile Include="PolledTimer.cpp" />
     <ClCompile Include="stdafx.cpp" />

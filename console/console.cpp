@@ -22,14 +22,12 @@
 #include "FaceInfo.h"
 #include "MissedDetectionTrigger.h"
 #include "PolledTimer.h"
+#include "CVMain.h"
+#include "FSMLoop.h"
+#include "AppMain.h"
 
 using namespace std;
 using namespace cv;
-
-
-CascadeClassifier cc_face;
-CascadeClassifier cc_eyes;
-CascadeClassifier cc_grin;
 
 const double EYE_MISS_CT_MS = 3000.0;
 const double EYE_WARN_CT_MS = 2000.0;
@@ -45,104 +43,29 @@ String path = "~/work/cpox/";
 String pathx = "~/work/cpox/movie/";
 
 
-bool detect(const Mat& r, FaceInfo& rFaceInfo)
-{
-    std::vector<Rect> obj_face;
-    std::vector<Rect> obj_eyeL;
-    std::vector<Rect> obj_eyeR;
-
-    const double face_scale_factor = 1.1;
-    const double eyes_scale_factor = 1.05;
-    const double grin_scale_factor = 1.1;
-    const int face_neighbor_ct = 2;
-    const int eye_neighbor_ct = 3;
-
-    // demo code does histogram equalization so do the same
-    equalizeHist(r, r);
-
-    // assume face will be "big"
-    Size min_size_face(60, 60);
-
-    // eyes will be smaller than face
-    Size min_size_eyes(8, 8);
-
-    // blow away old info
-    rFaceInfo.reset_results();
-
-    // assume nothing will be found
-    bool bFound = false;
-
-    // first find ONE face
-    cc_face.detectMultiScale(r, obj_face, face_scale_factor, face_neighbor_ct, 0, min_size_face);
-    if (obj_face.size() == 1)
-    {
-        // found face
-        rFaceInfo.apply_face(r.size(), obj_face[0]);
-        bFound = true;
-
-        if (rFaceInfo.is_eyes_enabled)
-        {
-            // then search for eyes in eye rectangles
-            // set found flag even if only one is found
-
-            bFound = false;
-            Mat eyeL_ROI = r(rFaceInfo.rect_eyeL_roi);
-            Mat eyeR_ROI = r(rFaceInfo.rect_eyeR_roi);
-
-            cc_eyes.detectMultiScale(eyeL_ROI, obj_eyeL, eyes_scale_factor, eye_neighbor_ct, 0, min_size_eyes);
-            if (obj_eyeL.size() >= 1)
-            {
-                rFaceInfo.apply_eyeL(obj_eyeL[0]);
-                bFound = true;
-            }
-
-            cc_eyes.detectMultiScale(eyeR_ROI, obj_eyeR, eyes_scale_factor, eye_neighbor_ct, 0, min_size_eyes);
-            if (obj_eyeR.size() >= 1)
-            {
-                rFaceInfo.apply_eyeR(obj_eyeR[0]);
-                bFound = true;
-            }
-        }
-
-        if (rFaceInfo.is_grin_enabled)
-        {
-            // try to find grin in mouth area
-            // use magic parameter to tune
-            // TODO:  tune during start-up?
-
-            int magic = 0;
-            
-            Mat grinROI = r(rFaceInfo.rect_grin_roi);
-            int w = (grinROI.size().width * 3) / 8;  // min 3/8 of mouth region width
-            int h = (grinROI.size().height * 1) / 3;  // min 1/3 of mouth region height
-            cc_grin.detectMultiScale(grinROI, rFaceInfo.obj_grin, grin_scale_factor, magic, 0, Size(w, h));
-
-            // this statement controls whether or not grin
-            // is required to determine if face "eye" state is okay
-            bFound = bFound && (rFaceInfo.obj_grin.size() > 0);
-
-            // offset the grin boxes
-            for (size_t j = 0; j < rFaceInfo.obj_grin.size(); j++)
-            {
-                rFaceInfo.obj_grin[j].x += rFaceInfo.x1;
-                rFaceInfo.obj_grin[j].y += rFaceInfo.ynose;
-            }
-        }
-    }
-
-    return bFound;
-}
-
-
 void external_action(const bool f)
 {
     // TODO: implement
 }
 
+void test()
+{
+    AppMain app;
+    app.Go();
+}
 
 int main(int argc, char** argv)
 {
     cout << "CPOX CONSOLE" << endl;
+    test();
+
+    FSMLoop fsmloop;
+
+    CVMain cvmain;
+    if (!cvmain.load_cascades(haar_cascade_path))
+    {
+        return -1;
+    }
 
 #if 0
     PolledTimer tmr;
@@ -151,7 +74,7 @@ int main(int argc, char** argv)
     {
         cout << tmr.sec() << endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        int n;
+        uint32_t n;
         tmr.update(n);
         if (n == 0)
         {
@@ -159,29 +82,6 @@ int main(int argc, char** argv)
         }
     }
 #endif
-    
-    String window_name = "Cam";
-    String face_cascade_name = "haarcascade_frontalface_alt.xml";
-    String eyes_cascade_name = "haarcascade_eye_tree_eyeglasses.xml";
-    String grin_cascade_name = "haarcascade_smile.xml";
-
-    if (!cc_face.load(haar_cascade_path + face_cascade_name))
-    {
-        cout << "Face cascade data failed to open." << endl;
-        return -1;
-    }
-
-    if (!cc_eyes.load(haar_cascade_path + eyes_cascade_name))
-    {
-        cout << "Eyes cascade data failed to open." << endl;
-        return -1;
-    }
-
-    if (!cc_grin.load(haar_cascade_path + grin_cascade_name))
-    {
-        cout << "Grin cascade data failed to open." << endl;
-        return -1;
-    }
 
     VideoCapture vcap(0);
     if (!vcap.isOpened())
@@ -190,6 +90,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    String window_name = "Cam";
     namedWindow(window_name, WINDOW_AUTOSIZE);
 
     char key;
@@ -225,7 +126,7 @@ int main(int argc, char** argv)
         cvtColor(img_small, img_gray, COLOR_BGR2GRAY);
 
         // run the detection with the current options
-        bool bFound = detect(img_gray, face_info);
+        bool bFound = cvmain.detect(img_gray, face_info);
 
         // enable
         if (go)

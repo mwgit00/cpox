@@ -1,6 +1,7 @@
 #ifndef POLLED_TIMER_H_
 #define POLLED_TIMER_H_
 
+#include <cstdint>
 #include <chrono>
 
 /*
@@ -19,15 +20,15 @@ public:
     virtual ~PolledTimer();
 
     void stop(void);
-    int sec(void) const;
-    void start(const int n_seconds);
-    bool update(int& n_seconds_remaning);
+    uint32_t sec(void) const;
+    void start(const uint32_t n_seconds);
+    bool update(uint32_t& n_seconds_remaning);
 
 private:
     
     std::chrono::time_point<std::chrono::steady_clock> tp_later;
-    int _seconds_remaining;
-    int _maxsec;
+    uint32_t _seconds_remaining;
+    uint32_t _maxsec;
 };
 
 #endif // POLLED_TIMER_H_
