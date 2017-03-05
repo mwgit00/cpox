@@ -6,13 +6,6 @@ using namespace cv;
 
 CVMain::CVMain()
 {
-    // assume face will be "big"
-    // and eyes will be smaller
-    // suitable limits here will increase frame rate
-    // TODO-- this might depend on scale(currently fixed at 0.5)
-//    size_face = (60, 60);
-    //size_eyes = (18, 18);
-
     // grin detection tweak
     // - use 2 for mouth detector
     // - use big number like 70-140 for smile detector
@@ -61,20 +54,22 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
     std::vector<Rect> obj_eyeL;
     std::vector<Rect> obj_eyeR;
 
+    // tuning parameters
     const double face_scale_factor = 1.1;
-    const double eyes_scale_factor = 1.05;
+    const double eyes_scale_factor = 1.1;
     const double grin_scale_factor = 1.1;
+    const double min_face_scale = 0.25;
+    const double min_eyes_scale = 0.25;
     const int face_neighbor_ct = 2;
-    const int eye_neighbor_ct = 3;
+    const int eye_neighbor_ct = 2;
 
     // demo code does histogram equalization so do the same
     equalizeHist(r, r);
 
-    // assume face will be "big"
-    Size min_size_face(60, 60);
-
-    // eyes will be smaller than face
-    Size min_size_eyes(8, 8);
+    // minimum face width is some fraction of input image width
+    Size min_size_face(
+        static_cast<int>(r.size().width * min_face_scale),
+        static_cast<int>(r.size().width * min_face_scale));
 
     // blow away old info
     rFaceInfo.reset_results();
@@ -86,18 +81,24 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
     cc_face.detectMultiScale(r, obj_face, face_scale_factor, face_neighbor_ct, 0, min_size_face);
     if (obj_face.size() == 1)
     {
-        // found face
+        // found a face so apply its dimensions
         rFaceInfo.apply_face(r.size(), obj_face[0]);
         bFound = true;
 
         if (rFaceInfo.is_eyes_enabled)
         {
-            // then search for eyes in eye rectangles
-            // set found flag even if only one is found
+            // search for eyes in eye regions-of-interest
+            // set found flag even if only one eye is found
 
             bFound = false;
             Mat eyeL_ROI = r(rFaceInfo.rect_eyeL_roi);
             Mat eyeR_ROI = r(rFaceInfo.rect_eyeR_roi);
+
+            // minimum eye width is some fraction of eye ROI width
+            // both eyes ROI are the same size
+            Size min_size_eyes(
+                static_cast<int>(eyeL_ROI.size().width * min_eyes_scale),
+                static_cast<int>(eyeL_ROI.size().width * min_eyes_scale));
 
             cc_eyes.detectMultiScale(eyeL_ROI, obj_eyeL, eyes_scale_factor, eye_neighbor_ct, 0, min_size_eyes);
             if (obj_eyeL.size() >= 1)

@@ -5,8 +5,8 @@
 
 FSMLoop::FSMLoop() :
     state(STATE_IDLE),
-	cv_timer(),
-	level(0u)
+    cv_timer(),
+    level(0u)
 {
     snapshot["color"] = "black";
     snapshot["label"] = "IDLE";

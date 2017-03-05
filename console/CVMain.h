@@ -13,7 +13,7 @@ class CVMain
 {
 public:
     
-	CVMain();
+    CVMain();
     virtual ~CVMain();
 
     bool load_cascades(const std::string& path);
@@ -21,7 +21,7 @@ public:
 
 private:
     
-	cv::CascadeClassifier cc_face;
+    cv::CascadeClassifier cc_face;
     cv::CascadeClassifier cc_eyes;
     cv::CascadeClassifier cc_grin;
 };

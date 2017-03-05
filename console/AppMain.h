@@ -24,8 +24,6 @@ public:
     void update_fps();
     void record_frame(cv::Mat& frame, const std::string& name_prefix);
 
-    cv::Rect get_roi(const int h, const int w) const;
-
     void external_action(const bool flag, const uint32_t data = 0);
 
     void show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string& rsfps);
@@ -41,7 +39,7 @@ private:
     CVMain cvx;
     FSMLoop cvsm;
     
-	tMapStrBGR color_name_map;
+    tMapStrBGR color_name_map;
 
     bool b_eyes;
     bool b_grin;
@@ -57,10 +55,11 @@ private:
     std::string record_sfps;
     std::string record_path;
     
-	std::chrono::time_point<std::chrono::steady_clock> t_prev;
+    std::chrono::time_point<std::chrono::steady_clock> t_prev;
 
-    double roi_perc_h;
-    double roi_perc_w;
+    int zoom_ct;
+    int pan_ct;
+    int tilt_ct;
 
     std::set<char> cvsm_keys;
 };

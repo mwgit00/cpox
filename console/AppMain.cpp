@@ -7,6 +7,8 @@
 
 #include "AppMain.h"
 
+#define ZOOM_STEPS  (20)
+
 /*
 
 AppMain class
@@ -57,8 +59,8 @@ AppMain::AppMain()
     // OpenCV (B,G,R) named color dictionary
     // (these are purely arbitrary)
     color_name_map["black"] =   SCA_BLACK;
-    color_name_map["pink"] =    Scalar(192, 0, 192);
-    color_name_map["cyan"] =    Scalar(192, 192, 0);
+    color_name_map["pink"] =    SCA_PINK;
+    color_name_map["cyan"] =    SCA_CYAN;
     color_name_map["gray"] =    SCA_GRAY;
     color_name_map["white"] =   SCA_WHITE;
     color_name_map["yellow"] =  SCA_YELLOW;
@@ -66,7 +68,7 @@ AppMain::AppMain()
     color_name_map["red"] =     SCA_RED;
     color_name_map["brick"] =   Scalar(64, 64, 128);
     color_name_map["purple"] =  Scalar(128, 64, 64);
-    color_name_map["blue"] =    Scalar(192, 0, 0);
+    color_name_map["blue"] =    SCA_BLUE;
 
     cvsm_keys.insert(KEY_GO);
     cvsm_keys.insert(KEY_HALT);
@@ -100,11 +102,9 @@ AppMain::AppMain()
     record_sfps = "???";
     record_path = ""; // os.path.join(os.path.dirname(os.path.abspath(__file__)), "movie")
 
-    // scale the face detection ROI
-    // will chop a percentage from top/bottom and left/right
-    // can only use values in the range 0.0 - 0.5
-    roi_perc_h = 0.1;
-    roi_perc_w = 0.2;
+    zoom_ct = 0;    // 1x
+    pan_ct = 0;     // centered
+    tilt_ct = 0;    // centered
 }
 
 AppMain::~AppMain()
@@ -180,22 +180,6 @@ void AppMain::record_frame(Mat& frame, const std::string& name_prefix)
 #endif
 }
 
-cv::Rect AppMain::get_roi(const int h, const int w) const
-{
-/*
-Given source image dimensions, returns X and Y
-coordinates for region - of - interest based on
-percentages for chopping top / bottom and left / right.
-
-:param h : Height of source image
-: param w : Width of source image
-: return : (y0, y1, x0, x1)
-*/
-    double rh = roi_perc_h;
-    double rw = roi_perc_w;
-    return Rect(int(rh * h), int((1.0 - rh) * h), int(rw * w), int((1.0 - rw) * w));
-}
-
 void AppMain::external_action(const bool flag, const uint32_t data)
 {
     // sends command to an external serial device.
@@ -218,7 +202,7 @@ void AppMain::external_action(const bool flag, const uint32_t data)
 void AppMain::show_help()
 {
     // press '?' while monitor has focus
-    // to see this menu
+    // in order to see this menu
     std::cout << "? - Display help." << std::endl;
     std::cout << KEY_EYES   << " - Toggle eye detection." << std::endl;
     std::cout << KEY_GRIN   << " - Toggle smile detection." << std::endl;
@@ -231,6 +215,14 @@ void AppMain::show_help()
     std::cout << KEY_QUIT   << " - Quit." << std::endl;
     std::cout << "V - Toggle video recording." << std::endl;
     std::cout << "Z - (Test) Activate external output for half-second." << std::endl;
+    std::cout << KEY_ZOOMGT << " - Digital zoom in." << std::endl;
+    std::cout << KEY_ZOOMLT << " - Digital zoom out." << std::endl;
+    std::cout << KEY_ZOOM0  << " - Reset digital zoom." << std::endl;
+    std::cout << KEY_PANL   << " - Digital pan left if zoomed in." << std::endl;
+    std::cout << KEY_PANR   << " - Digital pan right if zoomed in." << std::endl;
+    std::cout << KEY_TILTU  << " - Digital tilt up if zoomed in." << std::endl;
+    std::cout << KEY_TILTD  << " - Digital tilt down if zoomed in." << std::endl;
+    std::cout << KEY_PT0    << " - Reset digital pan tilt." << std::endl;
     std::cout << "ESC - Quit." << std::endl;
 }
 
@@ -240,16 +232,9 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     Scalar status_color = color_name_map[cvsm.Snapshot("color")];
     std::string s_label = cvsm.Snapshot("label");
 
-    Size sz = img.size();
-    Rect roi = get_roi(sz.height, sz.width);
-
-    // draw face boxes and face ROI
+    // draw face boxes
     Mat img_final = img;
-
     rFI.rgb_draw_boxes(img_final);
-#if 0
-    rectangle(img_final, roi, color_name_map["cyan"]);
-#endif
 
     int wn = 54;  // width of status boxes
     int hn = 20;  // height of status boxes
@@ -330,7 +315,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
 
     // record frame if enabled and update monitor
     record_frame(img_final, "img");
-    imshow("POX Monitor", img_final);
+    imshow("CPOX Monitor", img_final);
 }
 
 bool AppMain::wait_and_check_keys(tListEvent& event_list)
@@ -408,10 +393,67 @@ bool AppMain::wait_and_check_keys(tListEvent& event_list)
     }
     else if (key == 'M')
     {
-        std::cout << "Begin making movie" << std::endl;
+        std::cout << "(NOT SUPPORTED YET) Begin making movie" << std::endl;
         //make_movie(record_path);
         std::cout << "Finished" << std::endl;
         reset_fps();
+    }
+    else if (key == KEY_ZOOMGT)
+    {
+        // zoom in
+        zoom_ct = (zoom_ct < ZOOM_STEPS) ? zoom_ct + 1 : zoom_ct;
+    }
+    else if (key == KEY_ZOOMLT)
+    {
+        // zoom out
+        if (zoom_ct > 0)
+        {
+            zoom_ct--;
+            // pan range depends on zoom
+            // so if zooming out then must adjust pan/tilt counts
+            // their absolute values cannot be greater than zoom count
+            if (abs(pan_ct) > zoom_ct)
+            {
+                pan_ct = (pan_ct < 0) ? pan_ct + 1 : pan_ct - 1;
+            }
+            if (abs(tilt_ct) > zoom_ct)
+            {
+                tilt_ct = (tilt_ct < 0) ? tilt_ct + 1 : tilt_ct - 1;
+            }
+        }
+    }
+    else if (key == KEY_PANL)
+    {
+        // pan left
+        pan_ct = (pan_ct < zoom_ct) ? pan_ct + 1 : pan_ct;
+    }
+    else if (key == KEY_PANR)
+    {
+        // pan right
+        pan_ct = (pan_ct > -zoom_ct) ? pan_ct - 1 : pan_ct;
+    }
+    else if (key == KEY_TILTU)
+    {
+        // tilt up
+        tilt_ct = (tilt_ct < zoom_ct) ? tilt_ct + 1 : tilt_ct;
+    }
+    else if (key == KEY_TILTD)
+    {
+        // tilt down
+        tilt_ct = (tilt_ct > -zoom_ct) ? tilt_ct - 1 : tilt_ct;
+    }
+    else if (key == KEY_ZOOM0)
+    {
+        // reset zoom to 1x
+        // must also reset pan and tilt
+        zoom_ct = 0;
+        pan_ct = 0;
+        tilt_ct = 0;
+    }
+    else if (key == KEY_PT0)
+    {
+        pan_ct = 0;
+        tilt_ct = 0;
     }
 
     return result;
@@ -434,8 +476,26 @@ bool AppMain::loop()
         return false;
     }
 
-    // this may need to change depending on camera
+    // grab an image to determine its size
+    Mat img_sample;
+    vcap >> img_sample;
+    Size capture_size = img_sample.size();
+
+    // determine size of image for console viewer
+    // scale may need to change depending on camera
     double img_scale = 0.5;
+    Size viewer_size = Size(
+        static_cast<int>(capture_size.width * img_scale),
+        static_cast<int>(capture_size.height * img_scale));
+
+    // determine parameters for 1x to 4x zoom
+    const int zoom_fac = 4;
+    const int wzoom = capture_size.width;
+    const int hzoom = capture_size.height;
+    const int max_zoom_offset_w = (wzoom / 2) - ((wzoom / zoom_fac) / 2);
+    const int max_zoom_offset_h = (hzoom / 2) - ((hzoom / zoom_fac) / 2);
+    const int zoom_step_w = (max_zoom_offset_w) / ZOOM_STEPS;
+    const int zoom_step_h = (max_zoom_offset_h) / ZOOM_STEPS;
 
     // this must persist between iterations
     tListEvent events;
@@ -445,21 +505,32 @@ bool AppMain::loop()
     while (true)
     {
         Mat img;
-        Mat img_small;
+        Mat img_viewer;
         Mat img_gray;
         FaceInfo face_info;
 
         // process images frame-by-frame
-        // grab image, downsize, extract ROI, run detection
+        // grab image, resize, extract ROI, run detection
         // b_found will be result of face/eye/grin detection
-        // boxes have data for drawing rectangles for what was detected
+        // FaceInfo has data for drawing rectangles for what was detected
         vcap >> img;
 
-        resize(img, img_small, Size(), img_scale, img_scale);
-        cvtColor(img_small, img_gray, COLOR_BGR2GRAY);
+        // calculate ROI for zoom
+        int zoom_offset_w = zoom_step_w * zoom_ct;
+        int zoom_offset_h = zoom_step_h * zoom_ct;
+        Rect zoom_rect(
+            zoom_offset_w + (pan_ct * zoom_step_w),
+            zoom_offset_h + (tilt_ct * zoom_step_h),
+            capture_size.width - 2 * zoom_offset_w,
+            capture_size.height - 2 * zoom_offset_h);
 
-        Size sz = img_small.size();
-        Rect roi = get_roi(sz.height, sz.width); // FIXME
+        // rescale zoom image to fit viewer
+        Mat img_zoom = img(zoom_rect);
+        resize(img_zoom, img_viewer, viewer_size);
+        cvtColor(img_viewer, img_gray, COLOR_BGR2GRAY);
+
+        Size sz = img_viewer.size();
+        //Rect roi = get_roi(sz.height, sz.width); // FIXME
         // Mat imgx = img_small(roi);
         
         face_info.is_eyes_enabled = b_eyes;
@@ -551,7 +622,7 @@ bool AppMain::loop()
 
         // update displays
         update_fps();
-        show_monitor_window(img_small, face_info, record_sfps);
+        show_monitor_window(img_viewer, face_info, record_sfps);
         check_z();
 
         // final step is to check keys

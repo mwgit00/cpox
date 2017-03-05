@@ -105,7 +105,7 @@ void FaceInfo::rgb_draw_boxes(cv::Mat& rImg) const
         rectangle(rImg, rect_eyeR, SCA_GREEN);
     }
 
-    cv::Scalar sca_face = SCA_GREEN_MED;
+    cv::Scalar sca_face = SCA_CYAN;
     line(rImg, cv::Point(x1, ynose), cv::Point(x2, ynose), sca_face);
     line(rImg, cv::Point(xhalf, y1), cv::Point(xhalf, ynose), sca_face);
     rectangle(rImg, rect_face, sca_face);

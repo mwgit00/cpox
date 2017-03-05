@@ -1,8 +1,8 @@
 #include "FSMEvent.h"
 
 FSMEvent::FSMEvent() :
-	code(FSMEventCode::E_NONE),
-	data(0u),
+    code(FSMEventCode::E_NONE),
+    data(0u),
     str("")
 {
 }
@@ -16,7 +16,7 @@ FSMEvent::FSMEvent(const FSMEventCode c) :
 
 FSMEvent::FSMEvent(const FSMEventCode c, const uint32_t d) :
     code(c),
-	data(d),
+    data(d),
     str("")
 {
 }
