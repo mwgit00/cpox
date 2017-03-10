@@ -2,6 +2,9 @@
 #define DEFS_H_
 
 #include <map>
+#include <string>
+#include "FSMEvent.h"
+#include "MTQueue.hpp"
 
 #define SCA_BLACK       (cv::Scalar(0, 0, 0))
 #define SCA_WHITE       (cv::Scalar(255, 255, 255))
@@ -37,5 +40,8 @@
 #define MAX_LEVEL       (10u)
 
 typedef std::map<std::string, std::string> tMapStrStr;
+
+typedef MTQueue<std::string> tMsgQueue;
+typedef MTQueue<FSMEvent> tEventQueue;
 
 #endif // DEFS_H_

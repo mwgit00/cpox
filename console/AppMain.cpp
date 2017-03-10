@@ -543,9 +543,16 @@ bool AppMain::loop()
             events.push_back(FSMEvent(FSMEventCode::E_CVOK));
         }
 
+        // poll to see if worker tasks sent any messages
+#if 0
+        while (!msg_queue.empty())
+        {
+            std::string smsg = msg_queue.pop();
+            std::cout << smsg << std::endl;
+        }
+#endif
+
         /*
-            // poll to see if workers sent any messages
-            while !event_queue.empty()
                 x = event_queue.get()
                 event_queue.task_done()
                 stokens = x.split()

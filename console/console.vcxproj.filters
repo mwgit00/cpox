@@ -48,6 +48,12 @@
     <ClInclude Include="AppMain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MTQueue.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TTSTask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -75,6 +81,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AppMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TTSTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

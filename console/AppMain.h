@@ -6,6 +6,7 @@
 
 #include "opencv2/imgproc/imgproc.hpp"
 
+#include "MTQueue.hpp"
 #include "FaceInfo.h"
 #include "FSMLoop.h"
 #include "CVMain.h"
