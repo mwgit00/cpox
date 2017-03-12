@@ -58,11 +58,6 @@ void test_mtqueue()
 int main(int argc, char** argv)
 {
 #if 0
-    tMsgQueue msgq;
-    TTSTask foo;
-    foo.assign_msg_queue(&msgq);
-    foo.go();
-
     msgq.push("hello world");
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     msgq.push("");

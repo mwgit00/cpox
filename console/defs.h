@@ -1,11 +1,6 @@
 #ifndef DEFS_H_
 #define DEFS_H_
 
-#include <map>
-#include <string>
-#include "FSMEvent.h"
-#include "MTQueue.hpp"
-
 // OpenCV (B,G,R) color definitions
 // (these are purely arbitrary)
 
@@ -47,10 +42,5 @@
 #define KEY_PT0         ('0')
 
 #define APP_MAX_LEVEL   (10u)
-
-typedef std::map<std::string, std::string> tMapStrStr;
-
-typedef MTQueue<std::string> tMsgQueue;
-typedef MTQueue<FSMEvent> tEventQueue;
 
 #endif // DEFS_H_

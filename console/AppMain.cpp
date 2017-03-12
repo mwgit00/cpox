@@ -60,12 +60,18 @@ AppMain::AppMain() :
     ui_func_map[KEY_ZOOM0] = &AppMain::UIResetZoom;
     ui_func_map[KEY_PT0] = &AppMain::UIResetPanTilt;
 
+    action_func_map[FSMEventCode::E_SAY] = &AppMain::ActionSay;
+    action_func_map[FSMEventCode::E_SAY_REP] = &AppMain::ActionSayRep;
+    action_func_map[FSMEventCode::E_SRGO] = &AppMain::ActionSpeechRecGo;
+    action_func_map[FSMEventCode::E_SRACK] = &AppMain::ActionSpeechRecAck;
+    action_func_map[FSMEventCode::E_XON] = &AppMain::ActionXON;
+    action_func_map[FSMEventCode::E_XOFF] = &AppMain::ActionXOFF;
+
+
 /*
     // worker thread stuff
-    thread_tts = poxtts.TTSDaemon()
         thread_rec = poxrec.RECDaemon()
         thread_com = poxcom.Com()
-        event_queue = Queue.Queue()
 
         // execution stuff
         phrase_mgr = poxutil.PhraseManager()
@@ -295,7 +301,7 @@ void AppMain::wait_and_check_keys(tListEvent& event_list)
         if (ui_func_map.count(key))
         {
             // handle UI functions
-            tUIFuncPtr p = ui_func_map[key];
+            tVVFuncPtr p = ui_func_map[key];
             (this->*p)();
         }
         else if (cvsm_keys.count(key))
@@ -347,9 +353,6 @@ void AppMain::loop()
     const int zoom_step_w = (max_zoom_offset_w) / ZOOM_STEPS;
     const int zoom_step_h = (max_zoom_offset_h) / ZOOM_STEPS;
 
-    // this must persist between iterations
-    tListEvent events;
-
     reset_fps();
 
     while (b_looping)
@@ -358,6 +361,7 @@ void AppMain::loop()
         Mat img_viewer;
         Mat img_gray;
         FaceInfo face_info;
+        tListEvent events;
 
         // process images frame-by-frame
         // grab image, resize, extract ROI, run detection
@@ -379,101 +383,45 @@ void AppMain::loop()
         resize(img_zoom, img_viewer, viewer_size);
         cvtColor(img_viewer, img_gray, COLOR_BGR2GRAY);
 
-        Size sz = img_viewer.size();
-        //Rect roi = get_roi(sz.height, sz.width); // FIXME
-        // Mat imgx = img_small(roi);
-        
         face_info.is_eyes_enabled = b_eyes;
         face_info.is_grin_enabled = b_grin;
         bool b_found = cvx.detect(img_gray, face_info);
 
-        // propagate face/eye found event
+        // add any keyboard events
+        wait_and_check_keys(events);
+
+        // add face/eye found event to event list
         if (b_found)
         {
             events.push_back(FSMEvent(FSMEventCode::E_CVOK));
         }
 
-        // poll to see if worker tasks sent any messages
-#if 0
-        while (!msg_queue.empty())
+        // add any worker events to event list
+        while (worker_events.size())
         {
-            std::string smsg = msg_queue.pop();
-            std::cout << smsg << std::endl;
+            FSMEvent x = worker_events.pop();
+            events.push_back(x);
+            ///@TODO -- how to handle E_RDONE ???
         }
-#endif
 
-        /*
-                x = event_queue.get()
-                event_queue.task_done()
-                stokens = x.split()
-                if stokens[0] == poxtts.POX_TTS:
-        events.append(poxfsm.SMEvent(FSMEventCode::E_SDONE))
-                else if (stokens[0] == poxrec.POX_REC :
-        if stokens[1] == 'init' :
-            // just std::cout << out initialization result
-            std::cout << " ".join(stokens[2:])
-        else if (cvsm.is_idle()
-            // probably running a test
-            // so just std::cout << message
-            std::cout << x
-        else:
-        // second token is 'True' or 'False'
-        // state machine will ack with strike count
-        flag = eval(stokens[1])
-            rdone = poxfsm.SMEvent(FSMEventCode::E_RDONE, flag)
-            events.append(rdone)
-                else if (stokens[0] == poxcom.POX_COM:
-        std::cout << stokens
-        */
-
-        // event list may have worker thread events and detection OK event
         // add any state machine timer events to event list
+        cvsm.check_timers(events);
+
         // then apply events to state machine
         tListEvent outputs;
-        cvsm.check_timers(events);
         for (const auto& this_event : events)
         {
             cvsm.crank(this_event, outputs);
         }
-        events.clear();
 
         // handle any output actions produced by state machine
         for (const auto& this_event : outputs)
         {
-            if (this_event.Code() == FSMEventCode::E_SAY)
+            FSMEventCode id = this_event.Code();
+            if (action_func_map.count(id))
             {
-                // issue command to say a phrase
-                // FIXME thread_tts.post_cmd('say', action.data)
-            }
-            else if (this_event.Code() == FSMEventCode::E_SAY_REP)
-            {
-                // retrieve next phrase to be repeated
-                // and issue command to say it
-                // phrase is stashed for upcoming recognition step...
-             //   phrase = phrase_mgr.next_phrase()
-               //     thread_tts.post_cmd('say', phrase)
-            }
-            else if (this_event.Code() == FSMEventCode::E_SRGO)
-            {
-                // issue command to recognize a phrase
-                // thread_rec.post_cmd('hear', phrase);
-            }
-            else if (this_event.Code() == FSMEventCode::E_SRACK)
-            {
-                // update strike display string
-                // propagate FAIL message if limit reached
-             //   s_strikes = "X" * action.data
-               //     if action.data == 3 :
-               // events.append(poxfsm.SMEvent(FSMEventCode::E_SRFAIL))
-            }
-            else if (this_event.Code() == FSMEventCode::E_XON)
-            {
-                external_action(true, this_event.Data());
-            }
-            else if (this_event.Code() == FSMEventCode::E_XOFF)
-            {
-                external_action(false);
-                s_strikes = "";
+                tVRevFuncPtr p = action_func_map[id];
+                (this->*p)(this_event);
             }
         }
 
@@ -481,15 +429,14 @@ void AppMain::loop()
         update_fps();
         show_monitor_window(img_viewer, face_info, record_sfps);
         check_z();
-
-        // final step is to check keys
-        // events generated by key presses will be handled next iteration
-        wait_and_check_keys(events);
     }
 
     // loop was terminated
     // be sure any external action is also halted
     external_action(false);
+
+    // command helper tasks to halt
+    tts_task.stop();
 
     // When everything done, release the capture
     vcap.release();
@@ -501,8 +448,7 @@ void AppMain::Go()
 {
     std::string haar_cascade_path = "C:\\opencv-3.2.0\\opencv\\build\\etc\\haarcascades\\";
 
-    std::cout << "*** CPOX ***" << std::endl;
-    std::cout << "WIN64" << std::endl;
+    std::cout << "*** CPOX for Windows 7 64-Bit OS ***" << std::endl;
 
     std::cout << "Recording path:  ";
     std::cout << "\"" << record_path << "\"" << std::endl;
@@ -532,11 +478,14 @@ void AppMain::Go()
     // away we go
     if (cvx.load_cascades(haar_cascade_path))
     {
+        tts_task.assign_tx_queue(&worker_events);
+        tts_task.go();
+
         /*
-        thread_tts.start(event_queue)
         thread_rec.start(event_queue)
         thread_com.start(event_queue)
         */
+
         loop();
         std::cout << util::GetString(IDS_DONE) << std::endl;
     }

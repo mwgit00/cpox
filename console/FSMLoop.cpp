@@ -113,8 +113,6 @@ void FSMLoop::check_timers(tListEvent& tmr_outputs)
 
 void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
 {
-    state_outputs.clear();
-
     // CHECK FOR HIGH-PRIORITY HALT
     // in any state other than idle and halt event occurs
     // - stop timer

@@ -5,6 +5,9 @@
 #include <string>
 #include <list>
 
+#include "MTQueue.hpp"
+
+
 enum class FSMEventCode : uint32_t
 {
     E_NONE =    0x00u,  ///< blank event
@@ -23,6 +26,8 @@ enum class FSMEventCode : uint32_t
     E_SAY_REP = 0x13u,  ///< say a canned phrase to be repeated
     E_SDONE =   0x20u,  ///< spoken phrase done
     E_RDONE =   0x21u,  ///< recognition done
+
+    E_CMD_HALT =    0x100u,
 };
 
 class FSMEvent
@@ -45,5 +50,6 @@ private:
 };
 
 typedef std::list<FSMEvent> tListEvent;
+typedef MTQueue<FSMEvent> tEventQueue;
 
 #endif // FSM_EVENT_H_

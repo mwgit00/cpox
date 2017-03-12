@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <set>
+#include <map>
 
 #include "opencv2/imgproc/imgproc.hpp"
 
@@ -10,6 +11,7 @@
 #include "FaceInfo.h"
 #include "FSMLoop.h"
 #include "CVMain.h"
+#include "TTSTask.h"
 
 #define ZOOM_STEPS  (20)
 
@@ -18,7 +20,8 @@ class AppMain
 {
 public:
 
-    typedef void (AppMain::*tUIFuncPtr)(void);
+    typedef void (AppMain::*tVVFuncPtr)(void);
+    typedef void (AppMain::*tVRevFuncPtr)(const FSMEvent&);
 
     AppMain();
     virtual ~AppMain();
@@ -34,6 +37,8 @@ public:
     void wait_and_check_keys(tListEvent& event_list);
     void loop();
     void Go();
+
+    // functions for UI table
 
     void UIBreak(void);
     void UIEyes(void);
@@ -53,10 +58,20 @@ public:
     void UIResetZoom(void);
     void UIResetPanTilt(void);
 
+    // functions for action table
+
+    void ActionSay(const FSMEvent& r);
+    void ActionSayRep(const FSMEvent& r);
+    void ActionSpeechRecGo(const FSMEvent& r);
+    void ActionSpeechRecAck(const FSMEvent& r);
+    void ActionXON(const FSMEvent& r);
+    void ActionXOFF(const FSMEvent& r);
+
 private:
 
     CVMain cvx;
     FSMLoop cvsm;
+    TTSTask tts_task;
     
     // high level state info
 
@@ -83,8 +98,11 @@ private:
     int pan_ct;
     int tilt_ct;
 
+    tEventQueue worker_events;
+    
     std::chrono::time_point<std::chrono::steady_clock> t_prev;
-    std::map<char, AppMain::tUIFuncPtr> ui_func_map;
+    std::map<char, AppMain::tVVFuncPtr> ui_func_map;
+    std::map<FSMEventCode, AppMain::tVRevFuncPtr> action_func_map;
     std::set<char> cvsm_keys;
 };
 
