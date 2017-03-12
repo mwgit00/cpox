@@ -22,6 +22,7 @@ public:
     bool is_eyes_enabled;
     bool is_grin_enabled;
 
+    double eyes_ratio;
     double nose_ratio;
     double chin_ratio;
 
@@ -29,8 +30,9 @@ public:
     int y1;     ///< top-left y-coord
     int x2;     ///< top-right x-coord
     int xhalf;  ///< divides face in half
-    int ynose;  ///< y-coord for horizontal nose line
-    int ychin;  ///< y-coord for chin line
+    int yeyes;  ///< y-coord for upper eye search
+    int ynose;  ///< y-coord for horizontal nose line (lower eye search)
+    int ychin;  ///< y-coord for chin line (extends below face)
 
     cv::Rect rect_face; ///< rectangle for found face
     cv::Rect rect_eyeL; ///< rectangle for found left eye

@@ -28,7 +28,7 @@ public:
     void check_z();
     void reset_fps();
     void update_fps();
-    void record_frame(cv::Mat& frame, const std::string& name_prefix);
+    void record_frame(cv::Mat& frame);
     void external_action(const bool flag, const uint32_t data = 0);
     void show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string& rsfps);
     void wait_and_check_keys(tListEvent& event_list);
@@ -58,6 +58,8 @@ private:
     CVMain cvx;
     FSMLoop cvsm;
     
+    // high level state info
+
     bool b_looping;
     bool b_eyes;
     bool b_grin;
@@ -65,20 +67,23 @@ private:
     std::string phrase;
     uint32_t n_z;
 
+    // frame recording info
+
+    std::string record_sfps;
+    std::string record_path;
     bool record_ok;
     bool record_enable;
     int record_ct;
     int record_clip;
     int record_k;
-    std::string record_sfps;
-    std::string record_path;
     
+    // digital zoom, pan, tilt
+
     int zoom_ct;
     int pan_ct;
     int tilt_ct;
 
     std::chrono::time_point<std::chrono::steady_clock> t_prev;
-    std::map<std::string, cv::Scalar> color_name_map;
     std::map<char, AppMain::tUIFuncPtr> ui_func_map;
     std::set<char> cvsm_keys;
 };

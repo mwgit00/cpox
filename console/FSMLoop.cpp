@@ -8,9 +8,9 @@ FSMLoop::FSMLoop() :
     cv_timer(),
     level(0u)
 {
-    snapshot["color"] = "black";
-    snapshot["label"] = "IDLE";
-    snapshot["prog"] = "0";
+    snapshot.color = SCA_BLACK;
+    snapshot.label = "IDLE";
+    snapshot.prog = 0;
 }
 
 FSMLoop::~FSMLoop()
@@ -65,32 +65,32 @@ void FSMLoop::check_timers(tListEvent& tmr_outputs)
     // get data for status indicator
     if (state == STATE_IDLE)
     {
-        snapshot["color"] = "black";
-        snapshot["label"] = "IDLE";
+        snapshot.color = SCA_BLACK;
+        snapshot.label = "IDLE";
     }
     else if (state == STATE_INH)
     {
         std::ostringstream oss;
         oss << cv_timer.sec();
-        snapshot["color"] = "blue";
-        snapshot["label"] = oss.str();
+        snapshot.color = SCA_BLUE;
+        snapshot.label = oss.str();
     }
     else if (state == STATE_NORM)
     {
-        snapshot["color"] = "green";
-        snapshot["label"] = "OK";
+        snapshot.color = SCA_GREEN;
+        snapshot.label = "OK";
     }
     else if (state == STATE_WARN)
     {
         std::ostringstream oss;
         oss << cv_timer.sec();
-        snapshot["color"] = "yellow";
-        snapshot["label"] = oss.str();
+        snapshot.color = SCA_YELLOW;
+        snapshot.label = oss.str();
     }
     else if (state == STATE_ACT)
     {
-        snapshot["color"] = "red";
-        snapshot["label"] = "FAIL";
+        snapshot.color = SCA_RED;
+        snapshot.label = "FAIL";
     }
 
     // handle own timeouts first
@@ -226,12 +226,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
     }
 }
 
-std::string FSMLoop::Snapshot(const std::string& rskey) const
+const FSMSnapShot& FSMLoop::Snapshot() const
 {
-    std::string result = "";
-    if (snapshot.count(rskey))
-    {
-        result = snapshot.find(rskey)->second;
-    }
-    return result;
+    return snapshot;
 }

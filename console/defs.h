@@ -6,6 +6,9 @@
 #include "FSMEvent.h"
 #include "MTQueue.hpp"
 
+// OpenCV (B,G,R) color definitions
+// (these are purely arbitrary)
+
 #define SCA_BLACK       (cv::Scalar(0, 0, 0))
 #define SCA_WHITE       (cv::Scalar(255, 255, 255))
 #define SCA_GRAY        (cv::Scalar(128, 128, 128))
@@ -19,6 +22,7 @@
 #define SCA_GREEN       (cv::Scalar(0, 255, 0))
 #define SCA_GREEN_MED   (cv::Scalar(0, 192, 0))
 #define SCA_BLUE        (cv::Scalar(255, 0, 0))
+#define SCA_PURPLE      (cv::Scalar(128, 64, 64))
 
 #define KEY_GO          ('g')
 #define KEY_HALT        ('h')

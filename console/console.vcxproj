@@ -158,12 +158,15 @@
     <ClInclude Include="FaceInfo.h" />
     <ClInclude Include="FSMEvent.h" />
     <ClInclude Include="FSMLoop.h" />
+    <ClInclude Include="FSMSnapShot.h" />
     <ClInclude Include="MissedDetectionTrigger.h" />
     <ClInclude Include="MTQueue.hpp" />
     <ClInclude Include="PolledTimer.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TTSTask.h" />
+    <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AppMain.cpp" />
@@ -173,10 +176,15 @@
     <ClCompile Include="FaceInfo.cpp" />
     <ClCompile Include="FSMEvent.cpp" />
     <ClCompile Include="FSMLoop.cpp" />
+    <ClCompile Include="FSMSnapShot.cpp" />
     <ClCompile Include="MissedDetectionTrigger.cpp" />
     <ClCompile Include="PolledTimer.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="TTSTask.cpp" />
+    <ClCompile Include="util.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="console.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

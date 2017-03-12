@@ -3,6 +3,7 @@
 
 #include "defs.h"
 #include "FSMEvent.h"
+#include "FSMSnapShot.h"
 #include "PolledTimer.h"
 
 class FSMLoop
@@ -35,7 +36,7 @@ public:
     void check_timers(tListEvent& tmr_outputs);
     void crank(const FSMEvent& this_event, tListEvent& state_outputs);
 
-    std::string Snapshot(const std::string& rskey) const;
+    const FSMSnapShot& Snapshot() const;
 
 private:
 
@@ -49,7 +50,7 @@ private:
     ///@TODO
     /* FIXME psm */
     uint32_t level;
-    tMapStrStr snapshot;
+    FSMSnapShot snapshot;
 };
 
 #endif // FSM_LOOP_H_

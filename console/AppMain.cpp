@@ -1,9 +1,13 @@
+#include "Windows.h"
+#include "resource.h"
+
 #include <iostream>
 #include <iomanip>
 #include <sstream>
 
 #include "opencv2/highgui/highgui.hpp"
 
+#include "util.h"
 #include "AppMain.h"
 
 #define ZOOM_STEPS  (20)
@@ -17,61 +21,25 @@ AppMain class
 - Camera and diagnostic view
 - User control via keyboard
 
-
-void AppMain::make_movie(img_path):
-    """Generate an MOV file from a directory of PNG files."""
-
-    // gather file names of frames
-    img_files = []
-    for (dirpath, dirnames, filenames) in os.walk(img_path):
-        img_files.extend(filenames)
-        break
-
-    // only consider PNG files
-    img_files = [each for each in img_files if each.rfind(".png") > 0]
-    if len(img_files) == 0:
-        std::cout << "No PNG files found!"
-        return
-
-    // determine size of frames
-    file_path = os.path.join(img_path, img_files[0])
-    size = cv.GetSize(cv.LoadImage(file_path))
-
-    // build movie from separate frames
-    // TODO -- may need to change FPS on different systems
-    fps = 15
-    movie_path = os.path.join(img_path, "movie.mov")
-    video_maker = VideoWriter(movie_path,
-                                  cv.CV_FOURCC('m', 'p', '4', 'v'),
-                                  fps, size)
-    if video_maker.isOpened()
-        for each in img_files:
-        file_path = os.path.join(img_path, each)
-            img = imread(file_path)
-            video_maker.write(img)
 */
+
 
 using namespace cv;
 
-AppMain::AppMain()
-{
-    // OpenCV (B,G,R) named color dictionary
-    // (these are purely arbitrary)
-    color_name_map["black"] =   SCA_BLACK;
-    color_name_map["pink"] =    SCA_PINK;
-    color_name_map["cyan"] =    SCA_CYAN;
-    color_name_map["gray"] =    SCA_GRAY;
-    color_name_map["white"] =   SCA_WHITE;
-    color_name_map["yellow"] =  SCA_YELLOW;
-    color_name_map["green"] =   SCA_GREEN;
-    color_name_map["red"] =     SCA_RED;
-    color_name_map["brick"] =   Scalar(64, 64, 128);
-    color_name_map["purple"] =  Scalar(128, 64, 64);
-    color_name_map["blue"] =    SCA_BLUE;
 
-    cvsm_keys.insert(KEY_GO);
-    cvsm_keys.insert(KEY_HALT);
-    cvsm_keys.insert(KEY_LISTEN);
+AppMain::AppMain() :
+    b_looping(true),
+    b_eyes(true),
+    b_grin(false),
+    s_strikes(""),
+    phrase(""),
+    n_z(0),
+    zoom_ct(0), // 1x
+    pan_ct(0),  // centered
+    tilt_ct(0)  // centered
+{
+    // these keys are converted to events for state machines
+    cvsm_keys = { KEY_GO, KEY_HALT, KEY_LISTEN };
 
     ui_func_map[KEY_ESC] = &AppMain::UIBreak;
     ui_func_map[KEY_QUIT] = &AppMain::UIBreak;
@@ -104,26 +72,14 @@ AppMain::AppMain()
         roi = None
 */
     
-    // state stuff best suited to top-level app
-    b_looping = true;
-    b_eyes = true;
-    b_grin = false;
-    s_strikes = "";
-    phrase = "";
-    n_z = 0;
-
-    // frame capture and recording
-    record_ok = false; // os.path.isdir(record_path)
+    // info for frame capture and recording
+    record_sfps = "???";
+    record_path = "c:\\work\\movie\\";
+    record_ok = util::IsPathOK(record_path);
     record_enable = false;
     record_ct = 0;
     record_clip = 0;
     record_k = 0;
-    record_sfps = "???";
-    record_path = ""; // os.path.join(os.path.dirname(os.path.abspath(__file__)), "movie")
-
-    zoom_ct = 0;    // 1x
-    pan_ct = 0;     // centered
-    tilt_ct = 0;    // centered
 }
 
 AppMain::~AppMain()
@@ -175,20 +131,19 @@ void AppMain::update_fps()
     }
 }
 
-void AppMain::record_frame(Mat& frame, const std::string& name_prefix)
+void AppMain::record_frame(cv::Mat& frame)
 {
     // record frames to sequentially numbered files if enabled
     // file names will also contain a two-digit clip ID
     if (record_ok && record_enable)
     {
-        std::string file_name = name_prefix;
-        if (file_name.length() == 0)
-        {
-            file_name = "frame";
-        }
-
         std::ostringstream oss;
-        oss << file_name;
+        if (record_path.back() != '\\')
+        {
+            // add slash if path doesn't end with one
+            oss << "\\";
+        }
+        oss << "img";
         oss << "_" << std::setfill('0') << std::setw(2) << record_clip;
         oss << "_" << std::setfill('0') << std::setw(5) << record_ct;
         oss << ".png";
@@ -207,14 +162,14 @@ void AppMain::external_action(const bool flag, const uint32_t data)
         // configure digital pin as output and turn on
      //   thread_com.post_cmd("dig0_cfg", "0")
        //     thread_com.post_cmd("dig0_io", "1")
-        std::cout << "EXT ON " << data << std::endl;
+        std::cout << util::GetString(IDS_EXT_ON) << " " << data << std::endl;
     }
     else
     {
         // turn off digital pin and configure as input
         //thread_com.post_cmd("dig0_io", "0")
           //  thread_com.post_cmd("dig0_cfg", "1")
-            std::cout << "EXT OFF" << std::endl;
+        std::cout << util::GetString(IDS_EXT_OFF) << std::endl;
     }
 }
 
@@ -222,34 +177,34 @@ void AppMain::show_help()
 {
     // press '?' while monitor has focus
     // in order to see this menu
-    std::cout << KEY_QUIT   << " - Quit." << std::endl;
-    std::cout << KEY_HELP   << " - Display help." << std::endl;
-    std::cout << KEY_EYES   << " - Toggle eye detection." << std::endl;
-    std::cout << KEY_GRIN   << " - Toggle smile detection." << std::endl;
-    std::cout << KEY_GO     << " - Go. Restarts monitoring." << std::endl;
-    std::cout << KEY_HALT   << " - Halt. Stops monitoring and any external action." << std::endl;
-    std::cout << KEY_LISTEN << " - Start scripted speech mode.  Only valid when monitoring." << std::endl;
-    std::cout << KEY_VIDREC << " - Toggle video recording." << std::endl;
-    std::cout << KEY_NEWMOV << " - Make MOV movie file from recorded video frames." << std::endl;
-    std::cout << KEY_ZOOMGT << " - Digital zoom in." << std::endl;
-    std::cout << KEY_ZOOMLT << " - Digital zoom out." << std::endl;
-    std::cout << KEY_ZOOM0  << " - Reset digital zoom." << std::endl;
-    std::cout << KEY_PANL   << " - Digital pan left if zoomed in." << std::endl;
-    std::cout << KEY_PANR   << " - Digital pan right if zoomed in." << std::endl;
-    std::cout << KEY_TILTU  << " - Digital tilt up if zoomed in." << std::endl;
-    std::cout << KEY_TILTD  << " - Digital tilt down if zoomed in." << std::endl;
-    std::cout << KEY_PT0    << " - Reset digital pan tilt." << std::endl;
-    std::cout << KEY_SAY    << " - (Test) Say next phrase from file." << std::endl;
-    std::cout << KEY_TTSREC << " - (Test) Recognize phrase that was last spoken." << std::endl;
-    std::cout << KEY_EXTON  << " - (Test) Activate external output for half-second." << std::endl;
-    std::cout << "ESC - Quit." << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_QUIT, IDS_HELP_KEY_QUIT) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_HELP, IDS_HELP_KEY_HELP) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_EYES, IDS_HELP_KEY_EYES) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_GRIN, IDS_HELP_KEY_GRIN) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_GO, IDS_HELP_KEY_GO) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_HALT, IDS_HELP_KEY_HALT) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_LISTEN, IDS_HELP_KEY_LISTEN) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_VIDREC, IDS_HELP_KEY_VIDREC) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_NEWMOV, IDS_HELP_KEY_NEWMOV) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_ZOOMGT, IDS_HELP_KEY_ZOOMGT) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_ZOOMLT, IDS_HELP_KEY_ZOOMLT) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_ZOOM0, IDS_HELP_KEY_ZOOM0) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_PANL, IDS_HELP_KEY_PANL) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_PANR, IDS_HELP_KEY_PANR) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_TILTU, IDS_HELP_KEY_TILTU) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_TILTD, IDS_HELP_KEY_TILTD) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_PT0, IDS_HELP_KEY_PT0) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_SAY, IDS_HELP_KEY_SAY) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_TTSREC, IDS_HELP_KEY_TTSREC) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_EXTON, IDS_HELP_KEY_EXTON) << std::endl;
+    std::cout << "ESC - " << util::GetString(IDS_HELP_KEY_QUIT) << "." << std::endl;
 }
 
 void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string& rsfps)
 {
     // update display items
-    Scalar status_color = color_name_map[cvsm.Snapshot("color")];
-    std::string s_label = cvsm.Snapshot("label");
+    Scalar status_color = cvsm.Snapshot().color;
+    std::string s_label = cvsm.Snapshot().label;
 
     // draw face boxes
     Mat img_final = img;
@@ -261,31 +216,31 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     // draw status label in upper left
     // along with status color
     rectangle(img_final, Rect(0, 0, wn, hn), status_color, CV_FILLED);
-    rectangle(img_final, Rect(0, 0, wn, hn), color_name_map["white"]);
+    rectangle(img_final, Rect(0, 0, wn, hn), SCA_WHITE);
     putText(img_final, s_label, Point(10, 14), FONT_HERSHEY_PLAIN, 1.0,
-        color_name_map["white"], 2);
+        SCA_WHITE, 2);
 
     // mode state icon box
-    rectangle(img_final, Rect(Point(0, hn), Point(wn, hn * 2)), color_name_map["purple"], CV_FILLED);
-    rectangle(img_final, Rect(Point(0, hn), Point(wn, hn * 2)), color_name_map["white"]);
+    rectangle(img_final, Rect(Point(0, hn), Point(wn, hn * 2)), SCA_PURPLE, CV_FILLED);
+    rectangle(img_final, Rect(Point(0, hn), Point(wn, hn * 2)), SCA_WHITE);
 
     // strike count display
-    std::string speech_mode_color = "gray"; // FIXME cvsm.psm.Snapshot("color");
+    Scalar speech_mode_color = SCA_GRAY; // FIXME cvsm.psm.Snapshot("color");
     rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)),
-        color_name_map[speech_mode_color], CV_FILLED);
+        speech_mode_color, CV_FILLED);
     rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)),
-        color_name_map["white"]);
+        SCA_WHITE);
     putText(img_final, s_strikes, Point(10, hn * 2 + 14),
-        FONT_HERSHEY_PLAIN, 1.0, color_name_map["white"], 2);
+        FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
 
     // frames per second and recording status
-    std::string fps_color = (record_enable) ? "red" : "black";
+    Scalar fps_color = (record_enable) ? SCA_RED : SCA_BLACK;
     rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)),
-        color_name_map[fps_color], CV_FILLED);
+        fps_color, CV_FILLED);
     rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)),
-        color_name_map["white"]);
+        SCA_WHITE);
     putText(img_final, rsfps, Point(10, hn * 3 + 14),
-        FONT_HERSHEY_PLAIN, 1.0, color_name_map["white"], 2);
+        FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
 
     /*
         // draw speech recognition progress (timeout) bar if active
@@ -299,12 +254,10 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         x2 = wn + (rec_sec - x) * wb
         x3 = wn + rec_sec * wb
         xtrg = x1 + 12 * wb  // see poxrec.py
-        rectangle(img_final, (x1, 0), (x2, hn), color_name_map["gray"],
-            cv.CV_FILLED)
-        rectangle(img_final, (x2, 0), (x3, hn), color_name_map["black"],
-            cv.CV_FILLED)
-        line(img_final, (xtrg, 0), (xtrg, hn), color_name_map["yellow"])
-        rectangle(img_final, (x1, 0), (x3, hn), color_name_map["white"])
+        rectangle(img_final, (x1, 0), (x2, hn), SCA_GRAY, CV_FILLED)
+        rectangle(img_final, (x2, 0), (x3, hn), SCA_BLACK, CV_FILLED)
+        line(img_final, (xtrg, 0), (xtrg, hn), SCA_YELLOW)
+        rectangle(img_final, (x1, 0), (x3, hn), SCA_WHITE)
         */
 
     // draw eye detection state indicator (pair of eyes)
@@ -313,14 +266,10 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         int e_y = 28;
         int e_x = 8;
         int e_dx = 8;
-        circle(img_final, Point(e_x, e_y), 3, color_name_map["white"],
-            CV_FILLED);
-        circle(img_final, Point(e_x + e_dx, e_y), 3, color_name_map["white"],
-            CV_FILLED);
-        circle(img_final, Point(e_x, e_y), 1, color_name_map["black"],
-            CV_FILLED);
-        circle(img_final, Point(e_x + e_dx, e_y), 1, color_name_map["black"],
-            CV_FILLED);
+        circle(img_final, Point(e_x, e_y), 3, SCA_WHITE, CV_FILLED);
+        circle(img_final, Point(e_x + e_dx, e_y), 3, SCA_WHITE, CV_FILLED);
+        circle(img_final, Point(e_x, e_y), 1, SCA_BLACK, CV_FILLED);
+        circle(img_final, Point(e_x + e_dx, e_y), 1, SCA_BLACK, CV_FILLED);
     }
 
     // draw grin detection state indicator (curve like a grin)
@@ -329,11 +278,11 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         int g_x = 34;
         int g_y = 28;
         ellipse(img_final, Point(g_x, g_y), Point(5, 3), 0, 0, 180,
-            color_name_map["white"], 2);
+            SCA_WHITE, 2);
     }
 
     // record frame if enabled and update monitor
-    record_frame(img_final, "img");
+    record_frame(img_final);
     imshow("CPOX Monitor", img_final);
 }
 
@@ -554,12 +503,15 @@ void AppMain::Go()
 
     std::cout << "*** CPOX ***" << std::endl;
     std::cout << "WIN64" << std::endl;
+
+    std::cout << "Recording path:  ";
+    std::cout << "\"" << record_path << "\"" << std::endl;
     if (!record_ok)
     {
-        std::cout << "Recording disabled.  Path not found:  \"";
-        std::cout << record_path;
-        std::cout << "\"" << std::endl;
+        std::cout << "Path not found" << std::endl;
     }
+
+
 
         /*
             // lazy hard-code for the port settings
@@ -586,6 +538,6 @@ void AppMain::Go()
         thread_com.start(event_queue)
         */
         loop();
-        std::cout << "DONE" << std::endl;
+        std::cout << util::GetString(IDS_DONE) << std::endl;
     }
 }
