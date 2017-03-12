@@ -11,37 +11,54 @@
 #include "FSMLoop.h"
 #include "CVMain.h"
 
-typedef std::map<std::string, cv::Scalar> tMapStrBGR;
+#define ZOOM_STEPS  (20)
+
 
 class AppMain
 {
 public:
 
+    typedef void (AppMain::*tUIFuncPtr)(void);
+
     AppMain();
     virtual ~AppMain();
+
+    static void show_help();
 
     void check_z();
     void reset_fps();
     void update_fps();
     void record_frame(cv::Mat& frame, const std::string& name_prefix);
-
     void external_action(const bool flag, const uint32_t data = 0);
-
     void show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string& rsfps);
-    bool wait_and_check_keys(tListEvent& event_list);
-
-    bool loop();
+    void wait_and_check_keys(tListEvent& event_list);
+    void loop();
     void Go();
 
-    static void show_help();
+    void UIBreak(void);
+    void UIEyes(void);
+    void UIGrin(void);
+    void UITestSay(void);
+    void UITestSpeechRec(void);
+    void UIHelp(void);
+    void UITestExt(void);
+    void UIRecord(void);
+    void UIMakeMovie(void);
+    void UIZoomIn(void);
+    void UIZoomOut(void);
+    void UIPanL(void);
+    void UIPanR(void);
+    void UITiltU(void);
+    void UITiltD(void);
+    void UIResetZoom(void);
+    void UIResetPanTilt(void);
 
 private:
 
     CVMain cvx;
     FSMLoop cvsm;
     
-    tMapStrBGR color_name_map;
-
+    bool b_looping;
     bool b_eyes;
     bool b_grin;
     std::string s_strikes;
@@ -56,12 +73,13 @@ private:
     std::string record_sfps;
     std::string record_path;
     
-    std::chrono::time_point<std::chrono::steady_clock> t_prev;
-
     int zoom_ct;
     int pan_ct;
     int tilt_ct;
 
+    std::chrono::time_point<std::chrono::steady_clock> t_prev;
+    std::map<std::string, cv::Scalar> color_name_map;
+    std::map<char, AppMain::tUIFuncPtr> ui_func_map;
     std::set<char> cvsm_keys;
 };
 

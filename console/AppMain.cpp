@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -74,6 +73,25 @@ AppMain::AppMain()
     cvsm_keys.insert(KEY_HALT);
     cvsm_keys.insert(KEY_LISTEN);
 
+    ui_func_map[KEY_ESC] = &AppMain::UIBreak;
+    ui_func_map[KEY_QUIT] = &AppMain::UIBreak;
+    ui_func_map[KEY_EYES] = &AppMain::UIEyes;
+    ui_func_map[KEY_GRIN] = &AppMain::UIGrin;
+    ui_func_map[KEY_HELP] = &AppMain::UIHelp;
+    ui_func_map[KEY_EXTON] = &AppMain::UITestExt;
+    ui_func_map[KEY_VIDREC] = &AppMain::UIRecord;
+    ui_func_map[KEY_SAY] = &AppMain::UITestSay;
+    ui_func_map[KEY_TTSREC] = &AppMain::UITestSpeechRec;
+    ui_func_map[KEY_NEWMOV] = &AppMain::UIMakeMovie;
+    ui_func_map[KEY_ZOOMGT] = &AppMain::UIZoomIn;
+    ui_func_map[KEY_ZOOMLT] = &AppMain::UIZoomOut;
+    ui_func_map[KEY_PANL] = &AppMain::UIPanL;
+    ui_func_map[KEY_PANR] = &AppMain::UIPanR;
+    ui_func_map[KEY_TILTU] = &AppMain::UITiltU;
+    ui_func_map[KEY_TILTD] = &AppMain::UITiltD;
+    ui_func_map[KEY_ZOOM0] = &AppMain::UIResetZoom;
+    ui_func_map[KEY_PT0] = &AppMain::UIResetPanTilt;
+
 /*
     // worker thread stuff
     thread_tts = poxtts.TTSDaemon()
@@ -87,6 +105,7 @@ AppMain::AppMain()
 */
     
     // state stuff best suited to top-level app
+    b_looping = true;
     b_eyes = true;
     b_grin = false;
     s_strikes = "";
@@ -158,8 +177,8 @@ void AppMain::update_fps()
 
 void AppMain::record_frame(Mat& frame, const std::string& name_prefix)
 {
-#if 0
     // record frames to sequentially numbered files if enabled
+    // file names will also contain a two-digit clip ID
     if (record_ok && record_enable)
     {
         std::string file_name = name_prefix;
@@ -167,17 +186,17 @@ void AppMain::record_frame(Mat& frame, const std::string& name_prefix)
         {
             file_name = "frame";
         }
+
+        std::ostringstream oss;
+        oss << file_name;
+        oss << "_" << std::setfill('0') << std::setw(2) << record_clip;
+        oss << "_" << std::setfill('0') << std::setw(5) << record_ct;
+        oss << ".png";
         
-        file_name += "_";
-        file_name += str(record_clip).zfill(2);
-        file_name += "_";
-        file_name += str(record_ct).zfill(5);
-        file_name += ".png";
-        file_path = os.path.join(record_path, file_name);
+        std::string file_path = record_path + oss.str();
         record_ct += 1;
         imwrite(file_path, frame);
     }
-#endif
 }
 
 void AppMain::external_action(const bool flag, const uint32_t data)
@@ -203,18 +222,15 @@ void AppMain::show_help()
 {
     // press '?' while monitor has focus
     // in order to see this menu
-    std::cout << "? - Display help." << std::endl;
+    std::cout << KEY_QUIT   << " - Quit." << std::endl;
+    std::cout << KEY_HELP   << " - Display help." << std::endl;
     std::cout << KEY_EYES   << " - Toggle eye detection." << std::endl;
     std::cout << KEY_GRIN   << " - Toggle smile detection." << std::endl;
     std::cout << KEY_GO     << " - Go. Restarts monitoring." << std::endl;
     std::cout << KEY_HALT   << " - Halt. Stops monitoring and any external action." << std::endl;
     std::cout << KEY_LISTEN << " - Start scripted speech mode.  Only valid when monitoring." << std::endl;
-    std::cout << "M - Make MOV movie file from recorded video frames." << std::endl;
-    std::cout << KEY_SAY    << " - (Test) Say next phrase from file." << std::endl;
-    std::cout << "r - (Test) Recognize phrase that was last spoken." << std::endl;
-    std::cout << KEY_QUIT   << " - Quit." << std::endl;
-    std::cout << "V - Toggle video recording." << std::endl;
-    std::cout << "Z - (Test) Activate external output for half-second." << std::endl;
+    std::cout << KEY_VIDREC << " - Toggle video recording." << std::endl;
+    std::cout << KEY_NEWMOV << " - Make MOV movie file from recorded video frames." << std::endl;
     std::cout << KEY_ZOOMGT << " - Digital zoom in." << std::endl;
     std::cout << KEY_ZOOMLT << " - Digital zoom out." << std::endl;
     std::cout << KEY_ZOOM0  << " - Reset digital zoom." << std::endl;
@@ -223,6 +239,9 @@ void AppMain::show_help()
     std::cout << KEY_TILTU  << " - Digital tilt up if zoomed in." << std::endl;
     std::cout << KEY_TILTD  << " - Digital tilt down if zoomed in." << std::endl;
     std::cout << KEY_PT0    << " - Reset digital pan tilt." << std::endl;
+    std::cout << KEY_SAY    << " - (Test) Say next phrase from file." << std::endl;
+    std::cout << KEY_TTSREC << " - (Test) Recognize phrase that was last spoken." << std::endl;
+    std::cout << KEY_EXTON  << " - (Test) Activate external output for half-second." << std::endl;
     std::cout << "ESC - Quit." << std::endl;
 }
 
@@ -318,148 +337,28 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     imshow("CPOX Monitor", img_final);
 }
 
-bool AppMain::wait_and_check_keys(tListEvent& event_list)
+void AppMain::wait_and_check_keys(tListEvent& event_list)
 {
-    bool result = true;
-
-    // this is where all key input comes from
-    // key press that affects state machine will be stuffed in event
-    // that event will be handled at next iteration
-
     char key = waitKey(1);
 
-    if ((key == KEY_ESC) || (key == KEY_QUIT))
+    if (key >= 0)
     {
-        result = false;
-    }
-    else if (key == KEY_EYES)
-    {
-        // toggle eye detection
-        b_eyes = !b_eyes;
-    }
-    else if (key == KEY_GRIN)
-    {
-        // toggle grin detection
-        b_grin = !b_grin;
-    }
-    else if (cvsm_keys.count(key))
-    {
-        event_list.push_back(FSMEvent(FSMEventCode::E_KEY, key));
-    }
-    else if (key == KEY_SAY)
-    {
-        if (cvsm.is_idle())
+        if (ui_func_map.count(key))
         {
-            // test retrieval and speaking of next phrase
-            // it will be saved for manual recognition step
-         //   phrase = phrase_mgr.next_phrase()
-           //     thread_tts.post_cmd('say', phrase)
+            // handle UI functions
+            tUIFuncPtr p = ui_func_map[key];
+            (this->*p)();
+        }
+        else if (cvsm_keys.count(key))
+        {
+            // key press that affects state machine will be stuffed in an event
+            // that event will be handled at next iteration
+            event_list.push_back(FSMEvent(FSMEventCode::E_KEY, key));
         }
     }
-    else if (key == 'r')
-    {
-        if (cvsm.is_idle())
-        {
-            //std::cout << "REC Test:", phrase
-              //  thread_rec.post_cmd('hear', phrase)
-        }
-    }
-    else if (key == '?')
-    {
-        show_help();
-    }
-    else if (key == 'Z')
-    {
-        n_z = 10;
-        external_action(true);
-    }
-    else if (key == 'V')
-    {
-        if (record_ok)
-        {
-            if (record_enable)
-            {
-                // enabled to disabled
-                record_enable = false;
-            }
-            else
-            {
-                // disabled to enabled, reset frame ct
-                record_enable = true;
-                record_clip += 1;
-                record_ct = 0;
-            }
-        }
-    }
-    else if (key == 'M')
-    {
-        std::cout << "(NOT SUPPORTED YET) Begin making movie" << std::endl;
-        //make_movie(record_path);
-        std::cout << "Finished" << std::endl;
-        reset_fps();
-    }
-    else if (key == KEY_ZOOMGT)
-    {
-        // zoom in
-        zoom_ct = (zoom_ct < ZOOM_STEPS) ? zoom_ct + 1 : zoom_ct;
-    }
-    else if (key == KEY_ZOOMLT)
-    {
-        // zoom out
-        if (zoom_ct > 0)
-        {
-            zoom_ct--;
-            // pan range depends on zoom
-            // so if zooming out then must adjust pan/tilt counts
-            // their absolute values cannot be greater than zoom count
-            if (abs(pan_ct) > zoom_ct)
-            {
-                pan_ct = (pan_ct < 0) ? pan_ct + 1 : pan_ct - 1;
-            }
-            if (abs(tilt_ct) > zoom_ct)
-            {
-                tilt_ct = (tilt_ct < 0) ? tilt_ct + 1 : tilt_ct - 1;
-            }
-        }
-    }
-    else if (key == KEY_PANL)
-    {
-        // pan left
-        pan_ct = (pan_ct < zoom_ct) ? pan_ct + 1 : pan_ct;
-    }
-    else if (key == KEY_PANR)
-    {
-        // pan right
-        pan_ct = (pan_ct > -zoom_ct) ? pan_ct - 1 : pan_ct;
-    }
-    else if (key == KEY_TILTU)
-    {
-        // tilt up
-        tilt_ct = (tilt_ct < zoom_ct) ? tilt_ct + 1 : tilt_ct;
-    }
-    else if (key == KEY_TILTD)
-    {
-        // tilt down
-        tilt_ct = (tilt_ct > -zoom_ct) ? tilt_ct - 1 : tilt_ct;
-    }
-    else if (key == KEY_ZOOM0)
-    {
-        // reset zoom to 1x
-        // must also reset pan and tilt
-        zoom_ct = 0;
-        pan_ct = 0;
-        tilt_ct = 0;
-    }
-    else if (key == KEY_PT0)
-    {
-        pan_ct = 0;
-        tilt_ct = 0;
-    }
-
-    return result;
 }
 
-bool AppMain::loop()
+void AppMain::loop()
 {
     // main application loop
     // - Do frame acquisition
@@ -473,7 +372,9 @@ bool AppMain::loop()
     if (!vcap.isOpened())
     {
         std::cout << "Camera Device failed to open." << std::endl;
-        return false;
+        ///////
+        return;
+        ///////
     }
 
     // grab an image to determine its size
@@ -502,7 +403,7 @@ bool AppMain::loop()
 
     reset_fps();
 
-    while (true)
+    while (b_looping)
     {
         Mat img;
         Mat img_viewer;
@@ -633,12 +534,8 @@ bool AppMain::loop()
         check_z();
 
         // final step is to check keys
-        // key events will be handled next iteration
-        // loop might be terminated here if check returns False
-        if (!wait_and_check_keys(events))
-        {
-            break;
-        }
+        // events generated by key presses will be handled next iteration
+        wait_and_check_keys(events);
     }
 
     // loop was terminated
@@ -648,7 +545,6 @@ bool AppMain::loop()
     // When everything done, release the capture
     vcap.release();
     destroyAllWindows();
-    return true;
 }
 
 

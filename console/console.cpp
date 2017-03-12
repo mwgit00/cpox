@@ -57,6 +57,7 @@ void test_mtqueue()
 
 int main(int argc, char** argv)
 {
+#if 0
     tMsgQueue msgq;
     TTSTask foo;
     foo.assign_msg_queue(&msgq);
@@ -67,6 +68,7 @@ int main(int argc, char** argv)
     msgq.push("");
 
     test_mtqueue();
+#endif
     AppMain app;
     app.Go();
 

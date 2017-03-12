@@ -36,7 +36,7 @@ void FSMLoop::_to_act(tListEvent& temp_outputs)
     state = STATE_ACT;
     
     // increment  level unless it has reached maximum
-    if (level < MAX_LEVEL)
+    if (level < APP_MAX_LEVEL)
     {
         level += 1;
     }

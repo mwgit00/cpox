@@ -28,6 +28,11 @@
 #define KEY_EYES        ('1')
 #define KEY_GRIN        ('2')
 #define KEY_SAY         ('s')
+#define KEY_TTSREC      ('r')
+#define KEY_NEWMOV      ('M')
+#define KEY_VIDREC      ('V')
+#define KEY_EXTON       ('Z')
+#define KEY_HELP        ('?')
 #define KEY_ZOOMGT      ('>')
 #define KEY_ZOOMLT      ('<')
 #define KEY_PANL        ('[')
@@ -37,7 +42,7 @@
 #define KEY_ZOOM0       (')')
 #define KEY_PT0         ('0')
 
-#define MAX_LEVEL       (10u)
+#define APP_MAX_LEVEL   (10u)
 
 typedef std::map<std::string, std::string> tMapStrStr;
 

@@ -167,6 +167,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AppMain.cpp" />
+    <ClCompile Include="AppMainFuncs.cpp" />
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CVMain.cpp" />
     <ClCompile Include="FaceInfo.cpp" />
