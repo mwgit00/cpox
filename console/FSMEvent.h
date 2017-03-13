@@ -10,24 +10,23 @@
 
 enum class FSMEventCode : uint32_t
 {
-    E_NONE =    0x00u,  ///< blank event
-    E_KEY =     0x01u,  ///< key pressed
-    E_TMR_CV =  0x02u,  ///< computer vision state machine timer expired
-    E_CVOK =    0x03u,  ///< valid face / eye detection
-    E_SRFAIL =  0x04u,  ///< speech recognition failure(based on strikes)
-    E_TMR_SR =  0x05u,  ///< speech rec.state machine timer expired
-    E_SRGO =    0x06u,  ///< speech recognition begin
-    E_STOP =    0x07u,  ///< stop phrase machine
-    E_GO =      0x08u,  ///< restart phrase machine
-    E_SRACK =   0x09u,  ///< speech recognition result has been processed
-    E_XON =     0x10u,  ///< external action begin
-    E_XOFF =    0x11u,  ///< external action end
-    E_SAY =     0x12u,  ///< say a phrase
-    E_SAY_REP = 0x13u,  ///< say a canned phrase to be repeated
-    E_SDONE =   0x20u,  ///< spoken phrase done
-    E_RDONE =   0x21u,  ///< recognition done
-
-    E_CMD_HALT =    0x100u,
+    E_NONE =        0x00u,  ///< blank event
+    E_KEY =         0x01u,  ///< key pressed
+    E_CVOK =        0x02u,  ///< valid face / eye detection
+    E_TMR_CV =      0x03u,  ///< computer vision state machine timer expired
+    E_TMR_SR =      0x04u,  ///< speech rec. state machine timer expired
+    E_SR_FAIL =     0x10u,  ///< speech rec. failure (based on strikes)
+    E_SR_REC =      0x11u,  ///< begin recognition
+    E_SR_STOP =     0x12u,  ///< stop phrase machine
+    E_SR_GO =       0x13u,  ///< restart phrase machine
+    E_SR_STRIKES =  0x14u,  ///< speech rec. strike count back to app
+    E_SR_PHRASE =   0x15u,  ///< say phrase to be repeated and recognized
+    E_SR_RESULT =   0x16u,  ///< speech rec. returned pass-fail result
+    E_TTS_SAY =     0x20u,  ///< TTS task commanded to say a phrase
+    E_TTS_IDLE =    0x21u,  ///< TTS task has finished speaking a phrase
+    E_XON =         0x40u,  ///< external action begin
+    E_XOFF =        0x41u,  ///< external action end
+    E_TASK_HALT =   0xF0u, ///< tell worker task to terminate
 };
 
 class FSMEvent

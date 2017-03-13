@@ -1,7 +1,6 @@
 #include "FSMSnapShot.h"
 
 
-
 FSMSnapShot::FSMSnapShot()
 {
 }

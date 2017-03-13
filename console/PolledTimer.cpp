@@ -22,7 +22,6 @@ void PolledTimer::stop(void)
 uint32_t PolledTimer::sec(void) const
 {
     // returns seconds remaining as of last update
-
     return _seconds_remaining;
 }
 

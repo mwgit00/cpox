@@ -60,10 +60,11 @@ AppMain::AppMain() :
     ui_func_map[KEY_ZOOM0] = &AppMain::UIResetZoom;
     ui_func_map[KEY_PT0] = &AppMain::UIResetPanTilt;
 
-    action_func_map[FSMEventCode::E_SAY] = &AppMain::ActionSay;
-    action_func_map[FSMEventCode::E_SAY_REP] = &AppMain::ActionSayRep;
-    action_func_map[FSMEventCode::E_SRGO] = &AppMain::ActionSpeechRecGo;
-    action_func_map[FSMEventCode::E_SRACK] = &AppMain::ActionSpeechRecAck;
+    action_func_map[FSMEventCode::E_TTS_SAY] = &AppMain::ActionTTSSay;
+    action_func_map[FSMEventCode::E_SR_PHRASE] = &AppMain::ActionSRPhrase;
+    action_func_map[FSMEventCode::E_SR_REC] = &AppMain::ActionSRRec;
+    action_func_map[FSMEventCode::E_SR_STRIKES] = &AppMain::ActionSRStrikes;
+    action_func_map[FSMEventCode::E_SR_STOP] = &AppMain::ActionSRStop;
     action_func_map[FSMEventCode::E_XON] = &AppMain::ActionXON;
     action_func_map[FSMEventCode::E_XOFF] = &AppMain::ActionXOFF;
 
@@ -231,7 +232,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     rectangle(img_final, Rect(Point(0, hn), Point(wn, hn * 2)), SCA_WHITE);
 
     // strike count display
-    Scalar speech_mode_color = SCA_GRAY; // FIXME cvsm.psm.Snapshot("color");
+    Scalar speech_mode_color = psm.Snapshot().color;
     rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)),
         speech_mode_color, CV_FILLED);
     rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)),
@@ -248,23 +249,23 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     putText(img_final, rsfps, Point(10, hn * 3 + 14),
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
 
-    /*
-        // draw speech recognition progress (timeout) bar if active
-        // just a black rectangle that gets filled with gray blocks
-        // there's a yellow warning bar at ideal timeout time
-        x = int(cvsm.Snapshot("prog"])
-        if x > 0:
-    rec_sec = int(poxfsm.SMPhrase.REC_TIMEOUT_SEC)
-        wb = 10
-        x1 = wn
-        x2 = wn + (rec_sec - x) * wb
-        x3 = wn + rec_sec * wb
-        xtrg = x1 + 12 * wb  // see poxrec.py
-        rectangle(img_final, (x1, 0), (x2, hn), SCA_GRAY, CV_FILLED)
-        rectangle(img_final, (x2, 0), (x3, hn), SCA_BLACK, CV_FILLED)
-        line(img_final, (xtrg, 0), (xtrg, hn), SCA_YELLOW)
-        rectangle(img_final, (x1, 0), (x3, hn), SCA_WHITE)
-        */
+    // draw speech recognition progress (timeout) bar if active
+    // just a black rectangle that gets filled with gray blocks
+    // there's a yellow warning bar at ideal timeout time
+    int x = psm.Snapshot().prog;
+    if (x > 0)
+    {
+        int rec_sec = FSMPhrase::REC_TIMEOUT_SEC;
+        int wb = 10;
+        int x1 = wn;
+        int x2 = wn + (rec_sec - x) * wb;
+        int x3 = wn + rec_sec * wb;
+        int xtrg = x1 + 12 * wb;
+        rectangle(img_final, Rect(Point(x1, 0), Point(x2, hn)), SCA_GRAY, CV_FILLED);
+        rectangle(img_final, Rect(Point(x2, 0), Point(x3, hn)), SCA_BLACK, CV_FILLED);
+        line(img_final, Point(xtrg, 0), Point(xtrg, hn), SCA_YELLOW);
+        rectangle(img_final, Rect(Point(x1, 0), Point(x3, hn)), SCA_WHITE);
+    }
 
     // draw eye detection state indicator (pair of eyes)
     if (b_eyes)
@@ -396,26 +397,30 @@ void AppMain::loop()
             events.push_back(FSMEvent(FSMEventCode::E_CVOK));
         }
 
-        // add any worker events to event list
-        while (worker_events.size())
+        // add any events from worker threads or any output events
+        // from previous iteration to app event list
+        while (app_events.size())
         {
-            FSMEvent x = worker_events.pop();
+            FSMEvent x = app_events.pop();
             events.push_back(x);
-            ///@TODO -- how to handle E_RDONE ???
         }
 
         // add any state machine timer events to event list
         cvsm.check_timers(events);
+        psm.check_timers(events);
 
-        // then apply events to state machine
-        tListEvent outputs;
+        // then apply events to state machines
+        tListEvent output_events;
         for (const auto& this_event : events)
         {
-            cvsm.crank(this_event, outputs);
+            cvsm.crank(this_event, output_events);
+            psm.crank(this_event, output_events);
         }
 
-        // handle any output actions produced by state machine
-        for (const auto& this_event : outputs)
+        // handle any output actions produced by state machines
+        // this could stuff events back into app event queue
+        // and they will get handled at the next loop iteration
+        for (const auto& this_event : output_events)
         {
             FSMEventCode id = this_event.Code();
             if (action_func_map.count(id))
@@ -478,7 +483,7 @@ void AppMain::Go()
     // away we go
     if (cvx.load_cascades(haar_cascade_path))
     {
-        tts_task.assign_tx_queue(&worker_events);
+        tts_task.assign_tx_queue(&app_events);
         tts_task.go();
 
         /*

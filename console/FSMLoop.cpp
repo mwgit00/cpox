@@ -8,6 +8,7 @@ FSMLoop::FSMLoop() :
     cv_timer(),
     level(0u)
 {
+    snapshot.sec = 0;
     snapshot.color = SCA_BLACK;
     snapshot.label = "IDLE";
     snapshot.prog = 0;
@@ -32,17 +33,18 @@ void FSMLoop::_to_norm()
 void FSMLoop::_to_act(tListEvent& temp_outputs)
 {
     // helper for transition to ACT state
+    
     cv_timer.start(ACT_TIMEOUT_SEC);
     state = STATE_ACT;
     
-    // increment  level unless it has reached maximum
+    // increment level unless it has reached maximum
     if (level < APP_MAX_LEVEL)
     {
         level += 1;
     }
 
     // stop phrase machine
-    // FIXME temp_outputs.extend(psm.crank(SMEvent(FSMEventCode::E_STOP)))
+    temp_outputs.push_back(FSMEvent(FSMEventCode::E_SR_STOP));
     
     // turn on external action (pass along new level data)
     temp_outputs.push_back(FSMEvent(FSMEventCode::E_XON, level));
@@ -50,19 +52,12 @@ void FSMLoop::_to_act(tListEvent& temp_outputs)
 
 void FSMLoop::check_timers(tListEvent& tmr_outputs)
 {
-    // first update snapshot that is used for display
-    // because it has some timer-based stuff
+    // update the snapshot FIRST
+    // to prevent countdown time of 0 appearing briefly before a state change
+    // then update the timer
 
-    ///@TODO
-#if 0 // FIXME
-    // get data for progress bar for speech recognition
-    if psm.state == SMPhrase.STATE_REC:
-    snapshot["prog"] = str(psm.timer.sec())
-    else:
-    snapshot["prog"] = "0"
-#endif
+    snapshot.sec = cv_timer.sec();
 
-    // get data for status indicator
     if (state == STATE_IDLE)
     {
         snapshot.color = SCA_BLACK;
@@ -71,7 +66,7 @@ void FSMLoop::check_timers(tListEvent& tmr_outputs)
     else if (state == STATE_INH)
     {
         std::ostringstream oss;
-        oss << cv_timer.sec();
+        oss << snapshot.sec;
         snapshot.color = SCA_BLUE;
         snapshot.label = oss.str();
     }
@@ -93,21 +88,12 @@ void FSMLoop::check_timers(tListEvent& tmr_outputs)
         snapshot.label = "FAIL";
     }
 
-    // handle own timeouts first
     uint32_t sec;
     bool flag = cv_timer.update(sec);
     if (flag)
     {
         tmr_outputs.push_back(FSMEvent(FSMEventCode::E_TMR_CV));
     }
-
-    ///@TODO
-#if 0 // FIXME
-        // then those of sub-machine for phrase control
-        flag, t = psm.timer.update()
-        if flag)
-            tmr_outputs.push_back(SMEvent(FSMEventCode::E_TMR_SR))
-#endif
 }
 
 
@@ -129,16 +115,15 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
                 level = 0u;
                 state = STATE_IDLE;
 
-                // new phrase state machine(idle, must be restarted)
-                ///@TODO
-                // FIXME psm = smphrase()
-
+                // turn off phrase state machine
                 // turn off any external action
                 // announce halt
                 state_outputs.push_back(
+                    FSMEvent(FSMEventCode::E_SR_STOP));
+                state_outputs.push_back(
                     FSMEvent(FSMEventCode::E_XOFF));
                 state_outputs.push_back(
-                    FSMEvent(FSMEventCode::E_SAY, "session halted"));
+                    FSMEvent(FSMEventCode::E_TTS_SAY, "session halted"));
                 
                 ///////
                 return;
@@ -157,7 +142,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
                 state = STATE_INH;
                 // announce countdown has started
                 state_outputs.push_back(
-                    FSMEvent(FSMEventCode::E_SAY, "get ready"));
+                    FSMEvent(FSMEventCode::E_TTS_SAY, "get ready"));
             }
         }
     }
@@ -168,7 +153,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
             _to_norm();
             // announce start of monitoring
             state_outputs.push_back(
-                FSMEvent(FSMEventCode::E_SAY, "go"));
+                FSMEvent(FSMEventCode::E_TTS_SAY, "go"));
         }
     }
     else if (state == STATE_NORM)
@@ -186,7 +171,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
             cv_timer.start(FSMLoop::WARN_TIMEOUT_SEC);
             state = STATE_WARN;
         }
-        else if (this_event.Code() == FSMEventCode::E_SRFAIL)
+        else if (this_event.Code() == FSMEventCode::E_SR_FAIL)
         {
             _to_act(state_outputs);
         }
@@ -205,7 +190,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
         {
             _to_act(state_outputs);
         }
-        else if (this_event.Code() == FSMEventCode::E_SRFAIL)
+        else if (this_event.Code() == FSMEventCode::E_SR_FAIL)
         {
             _to_act(state_outputs);
         }

@@ -27,7 +27,7 @@ void AppMain::UITestSay(void)
         // test retrieval and speaking of next phrase
         // it will be saved for manual recognition step
         phrase = "this is a test"; ///@TODO -- phrase_mgr.next_phrase()
-        tts_task.post_event(FSMEvent(FSMEventCode::E_SAY, phrase));
+        tts_task.post_event(FSMEvent(FSMEventCode::E_TTS_SAY, phrase));
     }
 }
 
@@ -145,38 +145,44 @@ void AppMain::UIResetPanTilt(void)
 
 
 
-void AppMain::ActionSay(const FSMEvent& r)
+void AppMain::ActionTTSSay(const FSMEvent& r)
 {
     // pass event to TTS task
     tts_task.post_event(r);
 }
 
-void AppMain::ActionSayRep(const FSMEvent& r)
+void AppMain::ActionSRPhrase(const FSMEvent& r)
 {
     // retrieve next phrase to be repeated
     // and issue command to say it
     // phrase is stashed for upcoming recognition step...
-    //   phrase = phrase_mgr.next_phrase()
-    //     thread_tts.post_cmd('say', phrase)
+    phrase = "repeat this phrase"; ///@TODO -- FIXME phrase_mgr.next_phrase()
+    tts_task.post_event(FSMEvent(FSMEventCode::E_TTS_SAY, phrase));
 }
 
-void AppMain::ActionSpeechRecGo(const FSMEvent& r)
+void AppMain::ActionSRRec(const FSMEvent& r)
 {
     // issue command to recognize a phrase
     // thread_rec.post_cmd('hear', phrase);
 }
 
-void AppMain::ActionSpeechRecAck(const FSMEvent& r)
+void AppMain::ActionSRStrikes(const FSMEvent& r)
 {
     // update strike display string
-    // propagate FAIL message if limit reached
+    // propagate FAIL event if limit reached
     size_t n = r.Data();
     s_strikes = std::string(n, 'X');
     if (n == 3)
     {
-        ///@TODO -- FIXME events.append(poxfsm.SMEvent(FSMEventCode::E_SRFAIL))
+        app_events.push(FSMEvent(FSMEventCode::E_SR_FAIL));
     }
 }
+
+void AppMain::ActionSRStop(const FSMEvent& r)
+{
+    app_events.push(FSMEvent(FSMEventCode::E_SR_STOP));
+}
+
 
 void AppMain::ActionXON(const FSMEvent& r)
 {

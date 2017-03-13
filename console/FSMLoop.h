@@ -5,6 +5,7 @@
 #include "FSMEvent.h"
 #include "FSMSnapShot.h"
 #include "PolledTimer.h"
+#include "FSMPhrase.h"
 
 class FSMLoop
 {
@@ -35,7 +36,6 @@ public:
     bool is_idle() const;
     void check_timers(tListEvent& tmr_outputs);
     void crank(const FSMEvent& this_event, tListEvent& state_outputs);
-
     const FSMSnapShot& Snapshot() const;
 
 private:
@@ -47,10 +47,9 @@ private:
 
     uint32_t state;
     PolledTimer cv_timer;
-    ///@TODO
-    /* FIXME psm */
-    uint32_t level;
     FSMSnapShot snapshot;
+
+    uint32_t level;
 };
 
 #endif // FSM_LOOP_H_

@@ -158,6 +158,7 @@
     <ClInclude Include="FaceInfo.h" />
     <ClInclude Include="FSMEvent.h" />
     <ClInclude Include="FSMLoop.h" />
+    <ClInclude Include="FSMPhrase.h" />
     <ClInclude Include="FSMSnapShot.h" />
     <ClInclude Include="MissedDetectionTrigger.h" />
     <ClInclude Include="MTQueue.hpp" />
@@ -176,6 +177,7 @@
     <ClCompile Include="FaceInfo.cpp" />
     <ClCompile Include="FSMEvent.cpp" />
     <ClCompile Include="FSMLoop.cpp" />
+    <ClCompile Include="FSMPhrase.cpp" />
     <ClCompile Include="FSMSnapShot.cpp" />
     <ClCompile Include="MissedDetectionTrigger.cpp" />
     <ClCompile Include="PolledTimer.cpp" />

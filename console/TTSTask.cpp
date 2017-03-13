@@ -47,7 +47,7 @@ static void tts_thread_func(TTSTask * ptask)
             if (rq.size())
             {
                 FSMEvent x = rq.pop();
-                if (x.Code() == FSMEventCode::E_CMD_HALT)
+                if (x.Code() == FSMEventCode::E_TASK_HALT)
                 {
                     break;
                 }
@@ -57,7 +57,7 @@ static void tts_thread_func(TTSTask * ptask)
 
                 // this blocks until it is done
                 hr = pVoice->Speak(wsmsg.c_str(), 0, NULL);
-                ptask->GetTxQueue().push(FSMEvent(FSMEventCode::E_SDONE));
+                ptask->GetTxQueue().push(FSMEvent(FSMEventCode::E_TTS_IDLE));
             }
             else
             {
@@ -132,7 +132,7 @@ void TTSTask::go(void)
 void TTSTask::stop(void)
 {
     // command helper tasks to halt
-    qrx.push(FSMEvent(FSMEventCode::E_CMD_HALT));
+    qrx.push(FSMEvent(FSMEventCode::E_TASK_HALT));
     while (!is_thread_done)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

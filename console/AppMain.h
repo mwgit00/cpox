@@ -60,10 +60,11 @@ public:
 
     // functions for action table
 
-    void ActionSay(const FSMEvent& r);
-    void ActionSayRep(const FSMEvent& r);
-    void ActionSpeechRecGo(const FSMEvent& r);
-    void ActionSpeechRecAck(const FSMEvent& r);
+    void ActionTTSSay(const FSMEvent& r);
+    void ActionSRPhrase(const FSMEvent& r);
+    void ActionSRRec(const FSMEvent& r);
+    void ActionSRStrikes(const FSMEvent& r);
+    void ActionSRStop(const FSMEvent& r);
     void ActionXON(const FSMEvent& r);
     void ActionXOFF(const FSMEvent& r);
 
@@ -71,6 +72,7 @@ private:
 
     CVMain cvx;
     FSMLoop cvsm;
+    FSMPhrase psm;
     TTSTask tts_task;
     
     // high level state info
@@ -98,7 +100,7 @@ private:
     int pan_ct;
     int tilt_ct;
 
-    tEventQueue worker_events;
+    tEventQueue app_events;
     
     std::chrono::time_point<std::chrono::steady_clock> t_prev;
     std::map<char, AppMain::tVVFuncPtr> ui_func_map;

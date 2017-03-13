@@ -63,6 +63,9 @@
     <ClInclude Include="FSMSnapShot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FSMPhrase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -102,6 +105,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FSMSnapShot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSMPhrase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

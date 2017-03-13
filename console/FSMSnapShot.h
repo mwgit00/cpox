@@ -11,6 +11,8 @@ public:
     FSMSnapShot();
     virtual ~FSMSnapShot();
 public:
+    uint32_t state;
+    uint32_t sec;
     cv::Scalar color;
     std::string label;
     int prog;
