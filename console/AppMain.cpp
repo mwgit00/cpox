@@ -59,12 +59,16 @@ AppMain::AppMain() :
     ui_func_map[KEY_TILTD] = &AppMain::UITiltD;
     ui_func_map[KEY_ZOOM0] = &AppMain::UIResetZoom;
     ui_func_map[KEY_PT0] = &AppMain::UIResetPanTilt;
+    ui_func_map[KEY_TEST1] = &AppMain::UITest1;
+    ui_func_map[KEY_TEST2] = &AppMain::UITest2;
 
     action_func_map[FSMEventCode::E_TTS_SAY] = &AppMain::ActionTTSSay;
     action_func_map[FSMEventCode::E_SR_PHRASE] = &AppMain::ActionSRPhrase;
     action_func_map[FSMEventCode::E_SR_REC] = &AppMain::ActionSRRec;
     action_func_map[FSMEventCode::E_SR_STRIKES] = &AppMain::ActionSRStrikes;
-    action_func_map[FSMEventCode::E_SR_STOP] = &AppMain::ActionSRStop;
+    action_func_map[FSMEventCode::E_SR_STOP] = &AppMain::ActionSRPassBack;
+    action_func_map[FSMEventCode::E_SR_RESTART] = &AppMain::ActionSRPassBack;
+    action_func_map[FSMEventCode::E_SR_RESET] = &AppMain::ActionSRPassBack;
     action_func_map[FSMEventCode::E_XON] = &AppMain::ActionXON;
     action_func_map[FSMEventCode::E_XOFF] = &AppMain::ActionXOFF;
 
@@ -263,7 +267,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         int xtrg = x1 + 12 * wb;
         rectangle(img_final, Rect(Point(x1, 0), Point(x2, hn)), SCA_GRAY, CV_FILLED);
         rectangle(img_final, Rect(Point(x2, 0), Point(x3, hn)), SCA_BLACK, CV_FILLED);
-        line(img_final, Point(xtrg, 0), Point(xtrg, hn), SCA_YELLOW);
+        line(img_final, Point(xtrg, 0), Point(xtrg, hn - 1), SCA_YELLOW);
         rectangle(img_final, Rect(Point(x1, 0), Point(x3, hn)), SCA_WHITE);
     }
 
@@ -307,8 +311,8 @@ void AppMain::wait_and_check_keys(tListEvent& event_list)
         }
         else if (cvsm_keys.count(key))
         {
-            // key press that affects state machine will be stuffed in an event
-            // that event will be handled at next iteration
+            // a key press that affects a state machine
+            // will be stuffed in an event
             event_list.push_back(FSMEvent(FSMEventCode::E_KEY, key));
         }
     }
@@ -427,6 +431,10 @@ void AppMain::loop()
             {
                 tVRevFuncPtr p = action_func_map[id];
                 (this->*p)(this_event);
+            }
+            else
+            {
+                std::cout << "UNHANDLED EVENT " << (int)id << std::endl;
             }
         }
 

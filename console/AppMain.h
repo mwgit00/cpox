@@ -57,6 +57,8 @@ public:
     void UITiltD(void);
     void UIResetZoom(void);
     void UIResetPanTilt(void);
+    void UITest1(void);
+    void UITest2(void);
 
     // functions for action table
 
@@ -64,7 +66,7 @@ public:
     void ActionSRPhrase(const FSMEvent& r);
     void ActionSRRec(const FSMEvent& r);
     void ActionSRStrikes(const FSMEvent& r);
-    void ActionSRStop(const FSMEvent& r);
+    void ActionSRPassBack(const FSMEvent& r);
     void ActionXON(const FSMEvent& r);
     void ActionXOFF(const FSMEvent& r);
 

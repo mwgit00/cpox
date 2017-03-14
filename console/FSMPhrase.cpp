@@ -2,7 +2,7 @@
 
 
 FSMPhrase::FSMPhrase() :
-    state(STATE_IDLE),
+    state(STATE_STOP),
     sr_timer(),
     strikes(0u)
 {
@@ -31,9 +31,15 @@ void FSMPhrase::check_timers(tListEvent& tmr_outputs)
     snapshot.state = state;
     snapshot.sec = sr_timer.sec();
     snapshot.prog = (state == STATE_RECOGNIZING) ? snapshot.sec : 0;
-    snapshot.color =
-        ((state == STATE_IDLE) || (state == STATE_STOP)) ? SCA_BLACK : SCA_BRICK;
-
+    if ((state == STATE_IDLE) || (state == STATE_STOP))
+    {
+        snapshot.color = SCA_BLACK;
+    }
+    else
+    {
+        snapshot.color = ((strikes) ? SCA_YELLOW_MED : SCA_GREEN_MED);
+    }
+    
     uint32_t sec;
     bool flag = sr_timer.update(sec);
     if (flag)
@@ -72,7 +78,6 @@ void FSMPhrase::crank(const FSMEvent& this_event, tListEvent& state_outputs)
             {
                 // announce start of speech mode
                 _to_wait();
-                snapshot.color = SCA_BRICK;
                 state_outputs.push_back(FSMEvent(FSMEventCode::E_TTS_SAY,
                     "listen and repeat"));
             }
@@ -119,7 +124,8 @@ void FSMPhrase::crank(const FSMEvent& this_event, tListEvent& state_outputs)
             _to_wait();
             uint32_t ack_strikes = 0u;
 
-            if (this_event.Data() == 0)  ///@TODO -- check logic here
+            // 0-fail 1-pass
+            if (this_event.Data() == 0)
             {
                 strikes++;
                 ack_strikes = strikes;
@@ -134,10 +140,15 @@ void FSMPhrase::crank(const FSMEvent& this_event, tListEvent& state_outputs)
     }
     else if (state == STATE_STOP)
     {
-        ///@TODO -- why did I add this state ?
-        if (this_event.Code() == FSMEventCode::E_SR_GO)
+        if (this_event.Code() == FSMEventCode::E_SR_RESTART)
         {
+            // this restarts the phrase listen-and-repeat operation
+            // after an external action has been triggered
             _to_wait();
+        }
+        else if (this_event.Code() == FSMEventCode::E_SR_RESET)
+        {
+            state = STATE_IDLE;
         }
     }
 }

@@ -18,10 +18,11 @@ enum class FSMEventCode : uint32_t
     E_SR_FAIL =     0x10u,  ///< speech rec. failure (based on strikes)
     E_SR_REC =      0x11u,  ///< begin recognition
     E_SR_STOP =     0x12u,  ///< stop phrase machine
-    E_SR_GO =       0x13u,  ///< restart phrase machine
+    E_SR_RESTART =  0x13u,  ///< restart phrase machine
     E_SR_STRIKES =  0x14u,  ///< speech rec. strike count back to app
     E_SR_PHRASE =   0x15u,  ///< say phrase to be repeated and recognized
     E_SR_RESULT =   0x16u,  ///< speech rec. returned pass-fail result
+    E_SR_RESET =    0x17u,  ///< speech rec. back to idle
     E_TTS_SAY =     0x20u,  ///< TTS task commanded to say a phrase
     E_TTS_IDLE =    0x21u,  ///< TTS task has finished speaking a phrase
     E_XON =         0x40u,  ///< external action begin

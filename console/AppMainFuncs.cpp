@@ -143,6 +143,17 @@ void AppMain::UIResetPanTilt(void)
     tilt_ct = 0;
 }
 
+void AppMain::UITest1(void)
+{
+    // fake SR failure
+    app_events.push(FSMEvent(FSMEventCode::E_SR_RESULT, 0));
+}
+
+void AppMain::UITest2(void)
+{
+    // fake SR success
+    app_events.push(FSMEvent(FSMEventCode::E_SR_RESULT, 1));
+}
 
 
 void AppMain::ActionTTSSay(const FSMEvent& r)
@@ -156,7 +167,7 @@ void AppMain::ActionSRPhrase(const FSMEvent& r)
     // retrieve next phrase to be repeated
     // and issue command to say it
     // phrase is stashed for upcoming recognition step...
-    phrase = "repeat this phrase"; ///@TODO -- FIXME phrase_mgr.next_phrase()
+    phrase = "player will repeat this"; ///@TODO -- FIXME phrase_mgr.next_phrase()
     tts_task.post_event(FSMEvent(FSMEventCode::E_TTS_SAY, phrase));
 }
 
@@ -178,9 +189,12 @@ void AppMain::ActionSRStrikes(const FSMEvent& r)
     }
 }
 
-void AppMain::ActionSRStop(const FSMEvent& r)
+
+void AppMain::ActionSRPassBack(const FSMEvent& r)
 {
-    app_events.push(FSMEvent(FSMEventCode::E_SR_STOP));
+    // stop, restart, and reset are generated events
+    // that gets passed back to app
+    app_events.push(r);
 }
 
 

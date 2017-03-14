@@ -41,6 +41,8 @@
 #define KEY_TILTD       ('}')
 #define KEY_ZOOM0       (')')
 #define KEY_PT0         ('0')
+#define KEY_TEST1       ('!')
+#define KEY_TEST2       ('@')
 
 #define APP_MAX_LEVEL   (10u)
 

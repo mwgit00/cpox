@@ -72,14 +72,14 @@ void FSMLoop::check_timers(tListEvent& tmr_outputs)
     }
     else if (state == STATE_NORM)
     {
-        snapshot.color = SCA_GREEN;
+        snapshot.color = SCA_GREEN_MED;
         snapshot.label = "OK";
     }
     else if (state == STATE_WARN)
     {
         std::ostringstream oss;
         oss << cv_timer.sec();
-        snapshot.color = SCA_YELLOW;
+        snapshot.color = SCA_YELLOW_MED;
         snapshot.label = oss.str();
     }
     else if (state == STATE_ACT)
@@ -118,10 +118,8 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
                 // turn off phrase state machine
                 // turn off any external action
                 // announce halt
-                state_outputs.push_back(
-                    FSMEvent(FSMEventCode::E_SR_STOP));
-                state_outputs.push_back(
-                    FSMEvent(FSMEventCode::E_XOFF));
+                state_outputs.push_back(FSMEvent(FSMEventCode::E_SR_STOP));
+                state_outputs.push_back(FSMEvent(FSMEventCode::E_XOFF));
                 state_outputs.push_back(
                     FSMEvent(FSMEventCode::E_TTS_SAY, "session halted"));
                 
@@ -151,17 +149,16 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
         if (this_event.Code() == FSMEventCode::E_TMR_CV)
         {
             _to_norm();
+            // reset speech rec. SM so it can be started again
             // announce start of monitoring
+            state_outputs.push_back(
+                FSMEvent(FSMEventCode::E_SR_RESET));
             state_outputs.push_back(
                 FSMEvent(FSMEventCode::E_TTS_SAY, "go"));
         }
     }
     else if (state == STATE_NORM)
     {
-        // in NORM pass event to phrase sub - machine
-        ///@TODO
-        // FIXME state_outputs.extend(psm.crank(this_event));
-
         if (this_event.Code() == FSMEventCode::E_CVOK)
         {
             _to_norm();
@@ -178,10 +175,6 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
     }
     else if (state == STATE_WARN)
     {
-        // in WARN pass event to phrase sub - machine
-        ///@TODO
-        // FIXME state_outputs.extend(psm.crank(this_event));
-
         if (this_event.Code() == FSMEventCode::E_CVOK)
         {
             _to_norm();
@@ -201,9 +194,8 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
         {
             _to_norm();
             // restart phrase machine
-            ///@TODO
-// FIXME            state_outputs.extend(psm.crank(SMEvent(FSMEventCode::E_GO)))
             // turn off any external action
+            state_outputs.push_back(FSMEvent(FSMEvent(FSMEventCode::E_SR_RESTART)));
             state_outputs.push_back(FSMEvent(FSMEventCode::E_XOFF));
         }
     }
