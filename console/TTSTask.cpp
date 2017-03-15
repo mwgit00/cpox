@@ -15,7 +15,7 @@ extern CComModule _Module;
 #include "TTSTask.h"
 
 
-static void tts_thread_func(TTSTask * ptask)
+void tts_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
 {
     bool result = true;
     ISpVoice * pVoice = NULL;
@@ -43,10 +43,9 @@ static void tts_thread_func(TTSTask * ptask)
     {
         while (true)
         {
-            tEventQueue& rq = ptask->GetRxQueue();
-            if (rq.size())
+            if (rqrx.size())
             {
-                FSMEvent x = rq.pop();
+                FSMEvent x = rqrx.pop();
                 if (x.Code() == FSMEventCode::E_TASK_HALT)
                 {
                     break;
@@ -57,7 +56,7 @@ static void tts_thread_func(TTSTask * ptask)
 
                 // this blocks until it is done
                 hr = pVoice->Speak(wsmsg.c_str(), 0, NULL);
-                ptask->GetTxQueue().push(FSMEvent(FSMEventCode::E_TTS_IDLE));
+                rqtx.push(FSMEvent(FSMEventCode::E_TTS_IDLE));
             }
             else
             {
@@ -70,71 +69,4 @@ static void tts_thread_func(TTSTask * ptask)
     }
 
     ::CoUninitialize();
-    ptask->SetDone();
-}
-
-
-TTSTask::TTSTask() :
-    is_thread_done(false),
-    pqtx(nullptr)
-{
-}
-
-
-TTSTask::~TTSTask()
-{
-}
-
-
-void TTSTask::SetDone(void)
-{
-    is_thread_done = true;
-}
-
-
-bool TTSTask::GetDone(void)
-{
-    return is_thread_done;
-}
-
-
-tEventQueue& TTSTask::GetTxQueue(void)
-{
-    return *pqtx;
-}
-
-
-tEventQueue& TTSTask::GetRxQueue(void)
-{
-    return qrx;
-}
-
-
-void TTSTask::assign_tx_queue(tEventQueue * p)
-{
-    pqtx = p;
-}
-
-
-void TTSTask::post_event(const FSMEvent& x)
-{
-    qrx.push(x);
-}
-
-
-void TTSTask::go(void)
-{
-    std::thread tx(tts_thread_func, this);
-    tx.detach();
-}
-
-
-void TTSTask::stop(void)
-{
-    // command helper tasks to halt
-    qrx.push(FSMEvent(FSMEventCode::E_TASK_HALT));
-    while (!is_thread_done)
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
 }

@@ -27,7 +27,7 @@ void AppMain::UITestSay(void)
         // test retrieval and speaking of next phrase
         // it will be saved for manual recognition step
         phrase = "this is a test"; ///@TODO -- phrase_mgr.next_phrase()
-        tts_task.post_event(FSMEvent(FSMEventCode::E_TTS_SAY, phrase));
+        tts_events.push(FSMEvent(FSMEventCode::E_TTS_SAY, phrase));
     }
 }
 
@@ -159,7 +159,7 @@ void AppMain::UITest2(void)
 void AppMain::ActionTTSSay(const FSMEvent& r)
 {
     // pass event to TTS task
-    tts_task.post_event(r);
+    tts_events.push(r);
 }
 
 void AppMain::ActionSRPhrase(const FSMEvent& r)
@@ -168,7 +168,7 @@ void AppMain::ActionSRPhrase(const FSMEvent& r)
     // and issue command to say it
     // phrase is stashed for upcoming recognition step...
     phrase = "player will repeat this"; ///@TODO -- FIXME phrase_mgr.next_phrase()
-    tts_task.post_event(FSMEvent(FSMEventCode::E_TTS_SAY, phrase));
+    tts_events.push(FSMEvent(FSMEventCode::E_TTS_SAY, phrase));
 }
 
 void AppMain::ActionSRRec(const FSMEvent& r)
@@ -189,14 +189,12 @@ void AppMain::ActionSRStrikes(const FSMEvent& r)
     }
 }
 
-
 void AppMain::ActionSRPassBack(const FSMEvent& r)
 {
     // stop, restart, and reset are generated events
-    // that gets passed back to app
+    // that get passed back to app to be handled in next iteration
     app_events.push(r);
 }
-
 
 void AppMain::ActionXON(const FSMEvent& r)
 {

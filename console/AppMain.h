@@ -11,7 +11,7 @@
 #include "FaceInfo.h"
 #include "FSMLoop.h"
 #include "CVMain.h"
-#include "TTSTask.h"
+
 
 #define ZOOM_STEPS  (20)
 
@@ -75,7 +75,6 @@ private:
     CVMain cvx;
     FSMLoop cvsm;
     FSMPhrase psm;
-    TTSTask tts_task;
     
     // high level state info
 
@@ -102,7 +101,11 @@ private:
     int pan_ct;
     int tilt_ct;
 
+    // application and helper task event queues
+    
     tEventQueue app_events;
+    tEventQueue tts_events;
+    tEventQueue com_events;
     
     std::chrono::time_point<std::chrono::steady_clock> t_prev;
     std::map<char, AppMain::tVVFuncPtr> ui_func_map;

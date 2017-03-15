@@ -54,18 +54,15 @@ void test_mtqueue()
 }
 
 
-
 int main(int argc, char** argv)
 {
 #if 0
     msgq.push("hello world");
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     msgq.push("");
-
     test_mtqueue();
 #endif
     AppMain app;
     app.Go();
-
     return 0;
 }

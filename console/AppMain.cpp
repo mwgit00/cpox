@@ -8,6 +8,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "util.h"
+#include "TTSTask.h"
 #include "AppMain.h"
 
 #define ZOOM_STEPS  (20)
@@ -448,9 +449,6 @@ void AppMain::loop()
     // be sure any external action is also halted
     external_action(false);
 
-    // command helper tasks to halt
-    tts_task.stop();
-
     // When everything done, release the capture
     vcap.release();
     destroyAllWindows();
@@ -469,8 +467,6 @@ void AppMain::Go()
     {
         std::cout << "Path not found" << std::endl;
     }
-
-
 
         /*
             // lazy hard-code for the port settings
@@ -491,15 +487,16 @@ void AppMain::Go()
     // away we go
     if (cvx.load_cascades(haar_cascade_path))
     {
-        tts_task.assign_tx_queue(&app_events);
-        tts_task.go();
-
-        /*
-        thread_rec.start(event_queue)
-        thread_com.start(event_queue)
-        */
+        // start helper tasks
+        std::thread tts_task(tts_task_func,
+            std::ref(tts_events), std::ref(app_events));
 
         loop();
+
+        // command helper tasks to halt and wait for them to end
+        tts_events.push(FSMEvent(FSMEventCode::E_TASK_HALT));
+        tts_task.join();
+
         std::cout << util::GetString(IDS_DONE) << std::endl;
     }
 }
