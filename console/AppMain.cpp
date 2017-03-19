@@ -9,6 +9,7 @@
 
 #include "util.h"
 #include "TTSTask.h"
+#include "COMTask.h"
 #include "AppMain.h"
 
 #define ZOOM_STEPS  (20)
@@ -29,11 +30,13 @@ using namespace cv;
 
 
 AppMain::AppMain() :
-    b_looping(true),
-    b_eyes(true),
-    b_grin(false),
+    is_looping(true),
+    is_eyes_detect_enabled(true),
+    is_grin_detect_enabled(false),
+    is_tts_up(false),
+    is_com_up(false),
     s_strikes(""),
-    phrase(""),
+    s_current_phrase(""),
     n_z(0),
     zoom_ct(0), // 1x
     pan_ct(0),  // centered
@@ -64,34 +67,24 @@ AppMain::AppMain() :
     ui_func_map[KEY_TEST2] = &AppMain::UITest2;
 
     action_func_map[FSMEventCode::E_TTS_SAY] = &AppMain::ActionTTSSay;
+    action_func_map[FSMEventCode::E_TTS_UP] = &AppMain::ActionTTSUp;
     action_func_map[FSMEventCode::E_SR_PHRASE] = &AppMain::ActionSRPhrase;
     action_func_map[FSMEventCode::E_SR_REC] = &AppMain::ActionSRRec;
     action_func_map[FSMEventCode::E_SR_STRIKES] = &AppMain::ActionSRStrikes;
-    action_func_map[FSMEventCode::E_SR_STOP] = &AppMain::ActionSRPassBack;
-    action_func_map[FSMEventCode::E_SR_RESTART] = &AppMain::ActionSRPassBack;
-    action_func_map[FSMEventCode::E_SR_RESET] = &AppMain::ActionSRPassBack;
-    action_func_map[FSMEventCode::E_XON] = &AppMain::ActionXON;
-    action_func_map[FSMEventCode::E_XOFF] = &AppMain::ActionXOFF;
+    action_func_map[FSMEventCode::E_COM_XON] = &AppMain::ActionComXON;
+    action_func_map[FSMEventCode::E_COM_XOFF] = &AppMain::ActionComXOFF;
+    action_func_map[FSMEventCode::E_COM_UP] = &AppMain::ActionComUp;
+    action_func_map[FSMEventCode::E_COM_ACK] = &AppMain::ActionComAck;
 
-
-/*
-    // worker thread stuff
-        thread_rec = poxrec.RECDaemon()
-        thread_com = poxcom.Com()
-
-        // execution stuff
-        phrase_mgr = poxutil.PhraseManager()
-        roi = None
-*/
-    
     // info for frame capture and recording
+
     record_sfps = "???";
     record_path = "c:\\work\\movie\\";
-    record_ok = util::IsPathOK(record_path);
-    record_enable = false;
-    record_ct = 0;
+    is_record_path_ok = util::IsPathOK(record_path);
+    is_record_enabled = false;
+    record_frame_ct = 0;
     record_clip = 0;
-    record_k = 0;
+    record_fps_ct = 0;
 }
 
 AppMain::~AppMain()
@@ -115,7 +108,7 @@ void AppMain::reset_fps()
 {
     // clear FPS calculation data
     t_prev = std::chrono::high_resolution_clock::now();
-    record_k = 0;
+    record_fps_ct = 0;
     record_sfps = "???";
 }
 
@@ -123,8 +116,8 @@ void AppMain::update_fps()
 {
     // recalculate frames-per-second after this many frames
     const int FPS_FRAME_CT = 20;
-    record_k += 1;
-    if (record_k == FPS_FRAME_CT)
+    record_fps_ct += 1;
+    if (record_fps_ct == FPS_FRAME_CT)
     {
         // calculate elapsed time for 100 frames
         std::chrono::time_point<std::chrono::steady_clock> t_curr =
@@ -132,14 +125,14 @@ void AppMain::update_fps()
         double tx = std::chrono::duration<double>(t_curr - t_prev).count();
 
         // convert to frame rate string
-        double fps = static_cast<double>(record_k) / tx;
+        double fps = static_cast<double>(record_fps_ct) / tx;
         std::ostringstream oss;
         oss << std::fixed << std::setprecision(1) << fps;
         record_sfps = oss.str();
 
         // reset for next measurement
         t_prev = t_curr;
-        record_k = 0;
+        record_fps_ct = 0;
     }
 }
 
@@ -147,7 +140,7 @@ void AppMain::record_frame(cv::Mat& frame)
 {
     // record frames to sequentially numbered files if enabled
     // file names will also contain a two-digit clip ID
-    if (record_ok && record_enable)
+    if (is_record_path_ok && is_record_enabled)
     {
         std::ostringstream oss;
         if (record_path.back() != '\\')
@@ -157,11 +150,11 @@ void AppMain::record_frame(cv::Mat& frame)
         }
         oss << "img";
         oss << "_" << std::setfill('0') << std::setw(2) << record_clip;
-        oss << "_" << std::setfill('0') << std::setw(5) << record_ct;
+        oss << "_" << std::setfill('0') << std::setw(5) << record_frame_ct;
         oss << ".png";
         
         std::string file_path = record_path + oss.str();
-        record_ct += 1;
+        record_frame_ct += 1;
         imwrite(file_path, frame);
     }
 }
@@ -174,14 +167,14 @@ void AppMain::external_action(const bool flag, const uint32_t data)
         // configure digital pin as output and turn on
      //   thread_com.post_cmd("dig0_cfg", "0")
        //     thread_com.post_cmd("dig0_io", "1")
-        std::cout << util::GetString(IDS_EXT_ON) << " " << data << std::endl;
+        std::cout << util::GetString(IDS_APP_EXT_ON) << " " << data << std::endl;
     }
     else
     {
         // turn off digital pin and configure as input
         //thread_com.post_cmd("dig0_io", "0")
           //  thread_com.post_cmd("dig0_cfg", "1")
-        std::cout << util::GetString(IDS_EXT_OFF) << std::endl;
+        std::cout << util::GetString(IDS_APP_EXT_OFF) << std::endl;
     }
 }
 
@@ -221,6 +214,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     // draw face boxes
     Mat img_final = img;
     rFI.rgb_draw_boxes(img_final);
+    // FIXME std::cout << rFI.obj_grin.size() << std::endl;
 
     int wn = 54;  // width of status boxes
     int hn = 20;  // height of status boxes
@@ -246,7 +240,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
 
     // frames per second and recording status
-    Scalar fps_color = (record_enable) ? SCA_RED : SCA_BLACK;
+    Scalar fps_color = (is_record_enabled) ? SCA_RED : SCA_BLACK;
     rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)),
         fps_color, CV_FILLED);
     rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)),
@@ -273,24 +267,27 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     }
 
     // draw eye detection state indicator (pair of eyes)
-    if (b_eyes)
+    Scalar sca_eyes = (is_eyes_detect_enabled) ? SCA_WHITE : SCA_GRAY;
     {
         int e_y = 28;
         int e_x = 8;
         int e_dx = 8;
-        circle(img_final, Point(e_x, e_y), 3, SCA_WHITE, CV_FILLED);
-        circle(img_final, Point(e_x + e_dx, e_y), 3, SCA_WHITE, CV_FILLED);
-        circle(img_final, Point(e_x, e_y), 1, SCA_BLACK, CV_FILLED);
-        circle(img_final, Point(e_x + e_dx, e_y), 1, SCA_BLACK, CV_FILLED);
+        circle(img_final, Point(e_x, e_y), 3, sca_eyes, CV_FILLED);
+        circle(img_final, Point(e_x + e_dx, e_y), 3, sca_eyes, CV_FILLED);
+        if (is_eyes_detect_enabled)
+        {
+            circle(img_final, Point(e_x, e_y), 1, SCA_BLACK, CV_FILLED);
+            circle(img_final, Point(e_x + e_dx, e_y), 1, SCA_BLACK, CV_FILLED);
+        }
     }
 
     // draw grin detection state indicator (curve like a grin)
-    if (b_grin)
+    Scalar sca_grin = (is_grin_detect_enabled) ? SCA_WHITE : SCA_GRAY;
     {
         int g_x = 34;
         int g_y = 28;
         ellipse(img_final, Point(g_x, g_y), Point(5, 3), 0, 0, 180,
-            SCA_WHITE, 2);
+            sca_grin, 2);
     }
 
     // record frame if enabled and update monitor
@@ -298,7 +295,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     imshow("CPOX Monitor", img_final);
 }
 
-void AppMain::wait_and_check_keys(tListEvent& event_list)
+void AppMain::wait_and_check_keys(void)
 {
     char key = waitKey(1);
 
@@ -314,7 +311,7 @@ void AppMain::wait_and_check_keys(tListEvent& event_list)
         {
             // a key press that affects a state machine
             // will be stuffed in an event
-            event_list.push_back(FSMEvent(FSMEventCode::E_KEY, key));
+            app_events.push(FSMEvent(FSMEventCode::E_KEY, key));
         }
     }
 }
@@ -332,7 +329,7 @@ void AppMain::loop()
     VideoCapture vcap(0);
     if (!vcap.isOpened())
     {
-        std::cout << "Camera Device failed to open." << std::endl;
+        std::cout << util::GetString(IDS_APP_CAMERA_FAIL) << std::endl;
         ///////
         return;
         ///////
@@ -361,13 +358,12 @@ void AppMain::loop()
 
     reset_fps();
 
-    while (b_looping)
+    while (is_looping)
     {
         Mat img;
         Mat img_viewer;
         Mat img_gray;
         FaceInfo face_info;
-        tListEvent events;
 
         // process images frame-by-frame
         // grab image, resize, extract ROI, run detection
@@ -389,53 +385,37 @@ void AppMain::loop()
         resize(img_zoom, img_viewer, viewer_size);
         cvtColor(img_viewer, img_gray, COLOR_BGR2GRAY);
 
-        face_info.is_eyes_enabled = b_eyes;
-        face_info.is_grin_enabled = b_grin;
+        face_info.is_eyes_detect_enabled = is_eyes_detect_enabled;
+        face_info.is_grin_detect_enabled = is_grin_detect_enabled;
         bool b_found = cvx.detect(img_gray, face_info);
 
-        // add any keyboard events
-        wait_and_check_keys(events);
+        // enqueue any keyboard events
+        wait_and_check_keys();
 
-        // add face/eye found event to event list
+        // enqueue face/eye found event
         if (b_found)
         {
-            events.push_back(FSMEvent(FSMEventCode::E_CVOK));
+            app_events.push(FSMEvent(FSMEventCode::E_CVOK));
         }
 
-        // add any events from worker threads or any output events
-        // from previous iteration to app event list
+        // enqueue any state machine timer events
+        cvsm.check_timers(app_events);
+        psm.check_timers(app_events);
+
+        // apply events to state machines
+        // this could generate more events and stuff them in queue
+        // there may also be "actions" associated with queued events
         while (app_events.size())
         {
-            FSMEvent x = app_events.pop();
-            events.push_back(x);
-        }
+            FSMEvent this_event = app_events.pop();
+            cvsm.crank(this_event, app_events);
+            psm.crank(this_event, app_events);
 
-        // add any state machine timer events to event list
-        cvsm.check_timers(events);
-        psm.check_timers(events);
-
-        // then apply events to state machines
-        tListEvent output_events;
-        for (const auto& this_event : events)
-        {
-            cvsm.crank(this_event, output_events);
-            psm.crank(this_event, output_events);
-        }
-
-        // handle any output actions produced by state machines
-        // this could stuff events back into app event queue
-        // and they will get handled at the next loop iteration
-        for (const auto& this_event : output_events)
-        {
             FSMEventCode id = this_event.Code();
             if (action_func_map.count(id))
             {
                 tVRevFuncPtr p = action_func_map[id];
                 (this->*p)(this_event);
-            }
-            else
-            {
-                std::cout << "UNHANDLED EVENT " << (int)id << std::endl;
             }
         }
 
@@ -463,7 +443,7 @@ void AppMain::Go()
 
     std::cout << "Recording path:  ";
     std::cout << "\"" << record_path << "\"" << std::endl;
-    if (!record_ok)
+    if (!is_record_path_ok)
     {
         std::cout << "Path not found" << std::endl;
     }
@@ -490,13 +470,17 @@ void AppMain::Go()
         // start helper tasks
         std::thread tts_task(tts_task_func,
             std::ref(tts_events), std::ref(app_events));
+        std::thread com_task(com_task_func,
+            std::ref(com_events), std::ref(app_events));
 
         loop();
 
         // command helper tasks to halt and wait for them to end
         tts_events.push(FSMEvent(FSMEventCode::E_TASK_HALT));
+        com_events.push(FSMEvent(FSMEventCode::E_TASK_HALT));
         tts_task.join();
+        com_task.join();
 
-        std::cout << util::GetString(IDS_DONE) << std::endl;
+        std::cout << util::GetString(IDS_APP_DONE) << std::endl;
     }
 }

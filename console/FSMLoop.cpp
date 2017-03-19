@@ -30,7 +30,7 @@ void FSMLoop::_to_norm()
     state = STATE_NORM;
 }
 
-void FSMLoop::_to_act(tListEvent& temp_outputs)
+void FSMLoop::_to_act(tEventQueue& rq)
 {
     // helper for transition to ACT state
     
@@ -44,13 +44,12 @@ void FSMLoop::_to_act(tListEvent& temp_outputs)
     }
 
     // stop phrase machine
-    temp_outputs.push_back(FSMEvent(FSMEventCode::E_SR_STOP));
-    
     // turn on external action (pass along new level data)
-    temp_outputs.push_back(FSMEvent(FSMEventCode::E_XON, level));
+    rq.push(FSMEvent(FSMEventCode::E_SR_STOP));
+    rq.push(FSMEvent(FSMEventCode::E_COM_XON, level));
 }
 
-void FSMLoop::check_timers(tListEvent& tmr_outputs)
+void FSMLoop::check_timers(tEventQueue& rq)
 {
     // update the snapshot FIRST
     // to prevent countdown time of 0 appearing briefly before a state change
@@ -92,12 +91,12 @@ void FSMLoop::check_timers(tListEvent& tmr_outputs)
     bool flag = cv_timer.update(sec);
     if (flag)
     {
-        tmr_outputs.push_back(FSMEvent(FSMEventCode::E_TMR_CV));
+        rq.push(FSMEvent(FSMEventCode::E_TMR_CV));
     }
 }
 
 
-void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
+void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
 {
     // CHECK FOR HIGH-PRIORITY HALT
     // in any state other than idle and halt event occurs
@@ -118,10 +117,9 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
                 // turn off phrase state machine
                 // turn off any external action
                 // announce halt
-                state_outputs.push_back(FSMEvent(FSMEventCode::E_SR_STOP));
-                state_outputs.push_back(FSMEvent(FSMEventCode::E_XOFF));
-                state_outputs.push_back(
-                    FSMEvent(FSMEventCode::E_TTS_SAY, "session halted"));
+                rq.push(FSMEvent(FSMEventCode::E_SR_STOP));
+                rq.push(FSMEvent(FSMEventCode::E_COM_XOFF));
+                rq.push(FSMEvent(FSMEventCode::E_TTS_SAY, "session halted"));
                 
                 ///////
                 return;
@@ -139,8 +137,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
                 cv_timer.start(FSMLoop::INH_TIMEOUT_SEC);
                 state = STATE_INH;
                 // announce countdown has started
-                state_outputs.push_back(
-                    FSMEvent(FSMEventCode::E_TTS_SAY, "get ready"));
+                rq.push(FSMEvent(FSMEventCode::E_TTS_SAY, "get ready"));
             }
         }
     }
@@ -151,10 +148,8 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
             _to_norm();
             // reset speech rec. SM so it can be started again
             // announce start of monitoring
-            state_outputs.push_back(
-                FSMEvent(FSMEventCode::E_SR_RESET));
-            state_outputs.push_back(
-                FSMEvent(FSMEventCode::E_TTS_SAY, "go"));
+            rq.push(FSMEvent(FSMEventCode::E_SR_RESET));
+            rq.push(FSMEvent(FSMEventCode::E_TTS_SAY, "go"));
         }
     }
     else if (state == STATE_NORM)
@@ -170,7 +165,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
         }
         else if (this_event.Code() == FSMEventCode::E_SR_FAIL)
         {
-            _to_act(state_outputs);
+            _to_act(rq);
         }
     }
     else if (state == STATE_WARN)
@@ -181,11 +176,11 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
         }
         else if (this_event.Code() == FSMEventCode::E_TMR_CV)
         {
-            _to_act(state_outputs);
+            _to_act(rq);
         }
         else if (this_event.Code() == FSMEventCode::E_SR_FAIL)
         {
-            _to_act(state_outputs);
+            _to_act(rq);
         }
     }
     else if (state == STATE_ACT)
@@ -195,8 +190,8 @@ void FSMLoop::crank(const FSMEvent& this_event, tListEvent& state_outputs)
             _to_norm();
             // restart phrase machine
             // turn off any external action
-            state_outputs.push_back(FSMEvent(FSMEvent(FSMEventCode::E_SR_RESTART)));
-            state_outputs.push_back(FSMEvent(FSMEventCode::E_XOFF));
+            rq.push(FSMEvent(FSMEvent(FSMEventCode::E_SR_RESTART)));
+            rq.push(FSMEvent(FSMEventCode::E_COM_XOFF));
         }
     }
 }

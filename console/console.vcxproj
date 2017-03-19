@@ -153,6 +153,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AppMain.h" />
+    <ClInclude Include="COMTask.h" />
     <ClInclude Include="CVMain.h" />
     <ClInclude Include="defs.h" />
     <ClInclude Include="FaceInfo.h" />
@@ -172,6 +173,7 @@
   <ItemGroup>
     <ClCompile Include="AppMain.cpp" />
     <ClCompile Include="AppMainFuncs.cpp" />
+    <ClCompile Include="COMTask.cpp" />
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CVMain.cpp" />
     <ClCompile Include="FaceInfo.cpp" />

@@ -29,8 +29,8 @@ public:
     FSMPhrase();
     virtual ~FSMPhrase();
 
-    void check_timers(tListEvent& tmr_outputs);
-    void crank(const FSMEvent& this_event, tListEvent& state_outputs);
+    void check_timers(tEventQueue& rq);
+    void crank(const FSMEvent& this_event, tEventQueue& rq);
     const FSMSnapShot& Snapshot() const;
 
 private:

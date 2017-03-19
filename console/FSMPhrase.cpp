@@ -23,7 +23,7 @@ void FSMPhrase::_to_wait(void)
 }
 
 
-void FSMPhrase::check_timers(tListEvent& tmr_outputs)
+void FSMPhrase::check_timers(tEventQueue& rq)
 {
     // update the snapshot FIRST
     // then update the timer
@@ -44,12 +44,12 @@ void FSMPhrase::check_timers(tListEvent& tmr_outputs)
     bool flag = sr_timer.update(sec);
     if (flag)
     {
-        tmr_outputs.push_back(FSMEvent(FSMEventCode::E_TMR_SR));
+        rq.push(FSMEvent(FSMEventCode::E_TMR_SR));
     }
 }
 
 
-void FSMPhrase::crank(const FSMEvent& this_event, tListEvent& state_outputs)
+void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
 {
     // CHECK FOR HIGH-PRIORITY STOP
     // if in any state other than idle and STOP occurs
@@ -78,7 +78,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tListEvent& state_outputs)
             {
                 // announce start of speech mode
                 _to_wait();
-                state_outputs.push_back(FSMEvent(FSMEventCode::E_TTS_SAY,
+                rq.push(FSMEvent(FSMEventCode::E_TTS_SAY,
                     "listen and repeat"));
             }
         }
@@ -90,7 +90,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tListEvent& state_outputs)
             // new phrase to be spoken and repeated
             sr_timer.start(SPK_TIMEOUT_SEC);
             state = STATE_SPEAKING;
-            state_outputs.push_back(FSMEvent(FSMEventCode::E_SR_PHRASE));
+            rq.push(FSMEvent(FSMEventCode::E_SR_PHRASE));
         }
     }
     else if (state == STATE_SPEAKING)
@@ -106,7 +106,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tListEvent& state_outputs)
             // begin recognition
             sr_timer.start(REC_TIMEOUT_SEC);
             state = STATE_RECOGNIZING;
-            state_outputs.push_back(FSMEvent(FSMEventCode::E_SR_REC));
+            rq.push(FSMEvent(FSMEventCode::E_SR_REC));
         }
     }
     else if (state == STATE_RECOGNIZING)
@@ -122,32 +122,27 @@ void FSMPhrase::crank(const FSMEvent& this_event, tListEvent& state_outputs)
             // got a result so update strike count
             // then ack result with the number of strikes
             _to_wait();
-            uint32_t ack_strikes = 0u;
 
-            // 0-fail 1-pass
-            if (this_event.Data() == 0)
-            {
-                strikes++;
-                ack_strikes = strikes;
-            }
-            else
-            {
-                strikes = 0;
-            }
+            // update strike count based on result code: 0-fail, 1-pass
+            strikes = (this_event.Data() == 0) ? strikes + 1 : 0;
 
-            state_outputs.push_back(FSMEvent(FSMEventCode::E_SR_STRIKES, ack_strikes));
+            rq.push(FSMEvent(FSMEventCode::E_SR_STRIKES, strikes));
+            if (strikes == 3)
+            {
+                rq.push(FSMEvent(FSMEventCode::E_SR_FAIL));
+            }
         }
     }
     else if (state == STATE_STOP)
     {
         if (this_event.Code() == FSMEventCode::E_SR_RESTART)
         {
-            // this restarts the phrase listen-and-repeat operation
-            // after an external action has been triggered
+            // resume phrase listen-and-repeat
             _to_wait();
         }
         else if (this_event.Code() == FSMEventCode::E_SR_RESET)
         {
+            // UI event will be needed to restart phrase listen-and-repeat
             state = STATE_IDLE;
         }
     }

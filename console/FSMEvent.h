@@ -25,9 +25,12 @@ enum class FSMEventCode : uint32_t
     E_SR_RESET =    0x17u,  ///< speech rec. back to idle
     E_TTS_SAY =     0x20u,  ///< TTS task commanded to say a phrase
     E_TTS_IDLE =    0x21u,  ///< TTS task has finished speaking a phrase
-    E_XON =         0x40u,  ///< external action begin
-    E_XOFF =        0x41u,  ///< external action end
-    E_TASK_HALT =   0xF0u, ///< tell worker task to terminate
+    E_TTS_UP =      0x22u,  ///< TTS task initialized successfully
+    E_COM_XON =     0x40u,  ///< COM external action begin
+    E_COM_XOFF =    0x41u,  ///< COM external action end
+    E_COM_UP =      0x42u,  ///< COM task initialized successfully
+    E_COM_ACK =     0x43u,  ///< COM task sent ack/response
+    E_TASK_HALT =   0xF0u,  ///< tell worker task to terminate
 };
 
 class FSMEvent

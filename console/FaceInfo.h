@@ -19,26 +19,31 @@ public:
 
 public:
 
-    bool is_eyes_enabled;
-    bool is_grin_enabled;
+    bool is_eyes_detect_enabled;
+    bool is_grin_detect_enabled;
 
     double eyes_ratio;
     double nose_ratio;
+    double grin_ratio;
     double chin_ratio;
+    double side_ratio;
 
     int x1;     ///< top-left x-coord
     int y1;     ///< top-left y-coord
     int x2;     ///< top-right x-coord
+    int xa;     ///< "indented" left side
+    int xb;     ///< "indented" right side
     int xhalf;  ///< divides face in half
-    int yeyes;  ///< y-coord for upper eye search
-    int ynose;  ///< y-coord for horizontal nose line (lower eye search)
-    int ychin;  ///< y-coord for chin line (extends below face)
+    int yeyes;  ///< uppermost y-coord for eye search
+    int ynose;  ///< lowermost y-coord for eye search
+    int ygrin;  ///< uppermost y-coord for grin search
+    int ychin;  ///< lowermost y-coord for grin search (may extend below face)
 
     cv::Rect rect_face; ///< rectangle for found face
     cv::Rect rect_eyeL; ///< rectangle for found left eye
     cv::Rect rect_eyeR; ///< rectangle for found right eye
 
-    std::vector<cv::Rect> obj_grin;
+    std::vector<cv::Rect> obj_grin; ///< all grins that have been found
 
     cv::Rect rect_eyeL_roi;	///< region-of-interest for left eye search
     cv::Rect rect_eyeR_roi;	///< region-of-interest for right eye search

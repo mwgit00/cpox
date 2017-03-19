@@ -58,10 +58,10 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
     const double face_scale_factor = 1.1;
     const double eyes_scale_factor = 1.1;
     const double grin_scale_factor = 1.1;
-    const double min_face_scale = 0.25;
+    const double min_face_scale = 0.20;
     const double min_eyes_scale = 0.25;
     const int face_neighbor_ct = 2;
-    const int eye_neighbor_ct = 2;
+    const int eye_neighbor_ct = 1;
 
     // demo code does histogram equalization so do the same
     equalizeHist(r, r);
@@ -85,7 +85,7 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
         rFaceInfo.apply_face(r.size(), obj_face[0]);
         bFound = true;
 
-        if (rFaceInfo.is_eyes_enabled)
+        if (rFaceInfo.is_eyes_detect_enabled)
         {
             // search for eyes in eye regions-of-interest
             // set found flag even if only one eye is found
@@ -115,18 +115,28 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
             }
         }
 
-        if (rFaceInfo.is_grin_enabled)
+        if (rFaceInfo.is_grin_detect_enabled)
         {
             // try to find grin in mouth area
             // use magic parameter to tune
             // TODO:  tune during start-up?
 
-            int magic = 0;
+            int magic = 80;
 
             Mat grinROI = r(rFaceInfo.rect_grin_roi);
-            int w = (grinROI.size().width * 3) / 8;  // min 3/8 of mouth region width
-            int h = (grinROI.size().height * 1) / 3;  // min 1/3 of mouth region height
-            cc_grin.detectMultiScale(grinROI, rFaceInfo.obj_grin, grin_scale_factor, magic, 0, Size(w, h));
+
+#if 0
+            // try fixed-size 256 pixel wide box for smile detection
+            Mat grinROI;
+            double rat = 256.0 / grinROI_0.size().width;
+            resize(grinROI_0, grinROI, Size(), rat, rat);
+#endif
+            
+            int wmin = (grinROI.size().width * 3) / 8;
+            int hmin = (grinROI.size().height * 3) / 8;
+            int wmax = (grinROI.size().width * 3) / 4;
+            int hmax = (grinROI.size().height * 3) / 4;
+            cc_grin.detectMultiScale(grinROI, rFaceInfo.obj_grin, grin_scale_factor, magic, 0, Size(wmin, hmin), Size(wmax, hmax));
 
             // this statement controls whether or not grin
             // is required to determine if face "eye" state is okay
@@ -135,8 +145,8 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
             // offset the grin boxes
             for (size_t j = 0; j < rFaceInfo.obj_grin.size(); j++)
             {
-                rFaceInfo.obj_grin[j].x += rFaceInfo.x1;
-                rFaceInfo.obj_grin[j].y += rFaceInfo.ynose;
+                rFaceInfo.obj_grin[j].x += rFaceInfo.xa;
+                rFaceInfo.obj_grin[j].y += rFaceInfo.ygrin;
             }
         }
     }

@@ -8,11 +8,13 @@
 
 
 FaceInfo::FaceInfo() :
-    is_eyes_enabled(true),
-    is_grin_enabled(true),
+    is_eyes_detect_enabled(true),
+    is_grin_detect_enabled(true),
     eyes_ratio(0.2),
     nose_ratio(0.5625),
-    chin_ratio(1.125)
+    grin_ratio(0.5625),
+    chin_ratio(1.1),
+    side_ratio(0.125)
 {
 }
 
@@ -50,14 +52,19 @@ void FaceInfo::apply_face(const cv::Size& rImgSize, const cv::Rect& rFace)
     // determine coordinates for face feature regions
     int h_eyes = static_cast<int>((rFace.height) * eyes_ratio);
     int h_nose = static_cast<int>((rFace.height) * nose_ratio);
+    int h_grin = static_cast<int>((rFace.height) * grin_ratio);
     int h_chin = static_cast<int>((rFace.height) * chin_ratio);
+    int w_side = static_cast<int>((rFace.width) * side_ratio);
 
     x1 = rFace.x;
     y1 = rFace.y;
     x2 = rFace.x + rFace.width;
+    xa = rFace.x + w_side;
+    xb = rFace.x + rFace.width - w_side;
     xhalf = rFace.x + (rFace.width / 2);
     yeyes = rFace.y + h_eyes;
     ynose = rFace.y + h_nose;
+    ygrin = rFace.y + h_grin;
     ychin = rFace.y + h_chin;
 
     // y-coord for chin may go out of bounds so adjust if necessary
@@ -74,7 +81,7 @@ void FaceInfo::apply_face(const cv::Size& rImgSize, const cv::Rect& rFace)
     rect_eyeR_roi = cv::Rect(cv::Point(xhalf, yeyes), cv::Point(x2, ynose));
 
     // assign grin search rectangle
-    rect_grin_roi = cv::Rect(cv::Point(x1, ynose), cv::Point(x2, ychin));
+    rect_grin_roi = cv::Rect(cv::Point(xa, ygrin), cv::Point(xb, ychin));
 }
 
 
@@ -98,7 +105,7 @@ void FaceInfo::rgb_draw_boxes(cv::Mat& rImg) const
 {
     // draw face features
 
-    if (is_grin_enabled)
+    if (is_grin_detect_enabled)
     {
         for (size_t j = 0; j < obj_grin.size(); j++)
         {
@@ -106,7 +113,7 @@ void FaceInfo::rgb_draw_boxes(cv::Mat& rImg) const
         }
     }
 
-    if (is_eyes_enabled)
+    if (is_eyes_detect_enabled)
     {
         rectangle(rImg, rect_eyeL, SCA_GREEN);
         rectangle(rImg, rect_eyeR, SCA_GREEN);
@@ -116,5 +123,8 @@ void FaceInfo::rgb_draw_boxes(cv::Mat& rImg) const
     line(rImg, cv::Point(x1, yeyes), cv::Point(x2, yeyes), sca_face);
     line(rImg, cv::Point(x1, ynose), cv::Point(x2, ynose), sca_face);
     line(rImg, cv::Point(xhalf, y1), cv::Point(xhalf, ynose), sca_face);
+    line(rImg, cv::Point(xa, ygrin), cv::Point(xb, ygrin), sca_face);
+    line(rImg, cv::Point(xa, ygrin), cv::Point(xa, ychin - 1), sca_face);
+    line(rImg, cv::Point(xb, ygrin), cv::Point(xb, ychin - 1), sca_face);
     rectangle(rImg, rect_face, sca_face);
 }

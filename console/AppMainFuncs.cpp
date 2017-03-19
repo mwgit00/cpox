@@ -1,23 +1,27 @@
+#include "resource.h"
+
 #include <iostream>
+
+#include "util.h"
 #include "AppMain.h"
 
 
 void AppMain::UIBreak(void)
 {
     // set flag to end UI loop and terminate application
-    b_looping = false;
+    is_looping = false;
 }
 
 void AppMain::UIEyes(void)
 {
     // toggle eye detection
-    b_eyes = !b_eyes;
+    is_eyes_detect_enabled = !is_eyes_detect_enabled;
 }
 
 void AppMain::UIGrin(void)
 {
     // toggle grin detection
-    b_grin = !b_grin;
+    is_grin_detect_enabled = !is_grin_detect_enabled;
 }
 
 void AppMain::UITestSay(void)
@@ -26,8 +30,8 @@ void AppMain::UITestSay(void)
     {
         // test retrieval and speaking of next phrase
         // it will be saved for manual recognition step
-        phrase = "this is a test"; ///@TODO -- phrase_mgr.next_phrase()
-        tts_events.push(FSMEvent(FSMEventCode::E_TTS_SAY, phrase));
+        s_current_phrase = "this is a test"; ///@TODO -- phrase_mgr.next_phrase()
+        tts_events.push(FSMEvent(FSMEventCode::E_TTS_SAY, s_current_phrase));
     }
 }
 
@@ -53,19 +57,19 @@ void AppMain::UITestExt(void)
 
 void AppMain::UIRecord(void)
 {
-    if (record_ok)
+    if (is_record_path_ok)
     {
-        if (record_enable)
+        if (is_record_enabled)
         {
             // enabled to disabled
-            record_enable = false;
+            is_record_enabled = false;
         }
         else
         {
             // disabled to enabled, reset frame ct
-            record_enable = true;
+            is_record_enabled = true;
             record_clip += 1;
-            record_ct = 0;
+            record_frame_ct = 0;
         }
     }
 }
@@ -156,6 +160,12 @@ void AppMain::UITest2(void)
 }
 
 
+void AppMain::ActionTTSUp(const FSMEvent& r)
+{
+    std::cout << util::GetString(IDS_APP_TTS_UP) << std::endl;
+    is_tts_up = true;
+}
+
 void AppMain::ActionTTSSay(const FSMEvent& r)
 {
     // pass event to TTS task
@@ -167,8 +177,8 @@ void AppMain::ActionSRPhrase(const FSMEvent& r)
     // retrieve next phrase to be repeated
     // and issue command to say it
     // phrase is stashed for upcoming recognition step...
-    phrase = "player will repeat this"; ///@TODO -- FIXME phrase_mgr.next_phrase()
-    tts_events.push(FSMEvent(FSMEventCode::E_TTS_SAY, phrase));
+    s_current_phrase = "player will repeat this"; ///@TODO -- FIXME phrase_mgr.next_phrase()
+    tts_events.push(FSMEvent(FSMEventCode::E_TTS_SAY, s_current_phrase));
 }
 
 void AppMain::ActionSRRec(const FSMEvent& r)
@@ -180,29 +190,28 @@ void AppMain::ActionSRRec(const FSMEvent& r)
 void AppMain::ActionSRStrikes(const FSMEvent& r)
 {
     // update strike display string
-    // propagate FAIL event if limit reached
     size_t n = r.Data();
     s_strikes = std::string(n, 'X');
-    if (n == 3)
-    {
-        app_events.push(FSMEvent(FSMEventCode::E_SR_FAIL));
-    }
 }
 
-void AppMain::ActionSRPassBack(const FSMEvent& r)
-{
-    // stop, restart, and reset are generated events
-    // that get passed back to app to be handled in next iteration
-    app_events.push(r);
-}
-
-void AppMain::ActionXON(const FSMEvent& r)
+void AppMain::ActionComXON(const FSMEvent& r)
 {
     external_action(true, r.Data());
 }
 
-void AppMain::ActionXOFF(const FSMEvent& r)
+void AppMain::ActionComXOFF(const FSMEvent& r)
 {
     external_action(false);
     s_strikes = "";
+}
+
+void AppMain::ActionComUp(const FSMEvent& r)
+{
+    std::cout << util::GetString(IDS_APP_COM_UP) << std::endl;
+    is_com_up = true;
+}
+
+void AppMain::ActionComAck(const FSMEvent& r)
+{
+    std::cout << "Ack!" << std::endl;
 }

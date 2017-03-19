@@ -34,14 +34,14 @@ public:
     virtual ~FSMLoop();
 
     bool is_idle() const;
-    void check_timers(tListEvent& tmr_outputs);
-    void crank(const FSMEvent& this_event, tListEvent& state_outputs);
+    void check_timers(tEventQueue& rq);
+    void crank(const FSMEvent& this_event, tEventQueue& rq);
     const FSMSnapShot& Snapshot() const;
 
 private:
 
     void _to_norm();
-    void _to_act(tListEvent& temp_outputs);
+    void _to_act(tEventQueue& rq);
 
 private:
 

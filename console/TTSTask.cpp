@@ -31,7 +31,8 @@ void tts_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
         hr = CoCreateInstance(CLSID_SpVoice, NULL, CLSCTX_ALL, IID_ISpVoice, (void **)&pVoice);
         if (SUCCEEDED(hr))
         {
-            // report success
+            // report successful initialization
+            rqtx.push(FSMEvent(FSMEventCode::E_TTS_UP, 1));
         }
         else
         {
@@ -39,22 +40,27 @@ void tts_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
         }
     }
 
+    // if all is well then enter a sleepy loop
+    // that handles requests to say phrases
     if (result)
     {
         while (true)
         {
             if (rqrx.size())
             {
+                // end thread loop if commanded to halt
                 FSMEvent x = rqrx.pop();
                 if (x.Code() == FSMEventCode::E_TASK_HALT)
                 {
                     break;
                 }
                 
+                // convert to "wide" string for the speech API
                 const std::string& smsg = x.Str();
                 std::wstring wsmsg(smsg.begin(), smsg.end());
 
-                // this blocks until it is done
+                // say phrase which blocks until it is done
+                // report when phrase is completed
                 hr = pVoice->Speak(wsmsg.c_str(), 0, NULL);
                 rqtx.push(FSMEvent(FSMEventCode::E_TTS_IDLE));
             }
@@ -64,6 +70,7 @@ void tts_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
             }
         }
 
+        // clean up
         pVoice->Release();
         pVoice = NULL;
     }
