@@ -8,6 +8,7 @@
 
 
 FaceInfo::FaceInfo() :
+    is_face_found(false),
     is_eyes_detect_enabled(true),
     is_grin_detect_enabled(true),
     eyes_ratio(0.2),
@@ -27,6 +28,8 @@ FaceInfo::~FaceInfo()
 void FaceInfo::reset_results()
 {
     // clear all data that is based on classifier results
+    
+    is_face_found = false;
     
     x1 = 0;
     y1 = 0;
@@ -49,6 +52,8 @@ void FaceInfo::reset_results()
 
 void FaceInfo::apply_face(const cv::Size& rImgSize, const cv::Rect& rFace)
 {
+    is_face_found = true;
+
     // determine coordinates for face feature regions
     int h_eyes = static_cast<int>((rFace.height) * eyes_ratio);
     int h_nose = static_cast<int>((rFace.height) * nose_ratio);
@@ -103,28 +108,31 @@ void FaceInfo::apply_eyeR(const cv::Rect& rEye)
 
 void FaceInfo::rgb_draw_boxes(cv::Mat& rImg) const
 {
-    // draw face features
-
-    if (is_grin_detect_enabled)
+    // draw boxes around face features depending on mode
+    // and whether face was found or not
+    if (is_face_found)
     {
-        for (size_t j = 0; j < obj_grin.size(); j++)
+        if (is_grin_detect_enabled)
         {
-            rectangle(rImg, obj_grin[j], SCA_RED_MED);
+            for (size_t j = 0; j < obj_grin.size(); j++)
+            {
+                rectangle(rImg, obj_grin[j], SCA_RED_MED);
+            }
         }
-    }
 
-    if (is_eyes_detect_enabled)
-    {
-        rectangle(rImg, rect_eyeL, SCA_GREEN);
-        rectangle(rImg, rect_eyeR, SCA_GREEN);
-    }
+        if (is_eyes_detect_enabled)
+        {
+            rectangle(rImg, rect_eyeL, SCA_GREEN);
+            rectangle(rImg, rect_eyeR, SCA_GREEN);
+        }
 
-    cv::Scalar sca_face = SCA_CYAN;
-    line(rImg, cv::Point(x1, yeyes), cv::Point(x2, yeyes), sca_face);
-    line(rImg, cv::Point(x1, ynose), cv::Point(x2, ynose), sca_face);
-    line(rImg, cv::Point(xhalf, y1), cv::Point(xhalf, ynose), sca_face);
-    line(rImg, cv::Point(xa, ygrin), cv::Point(xb, ygrin), sca_face);
-    line(rImg, cv::Point(xa, ygrin), cv::Point(xa, ychin - 1), sca_face);
-    line(rImg, cv::Point(xb, ygrin), cv::Point(xb, ychin - 1), sca_face);
-    rectangle(rImg, rect_face, sca_face);
+        cv::Scalar sca_face = SCA_CYAN;
+        line(rImg, cv::Point(x1, yeyes), cv::Point(x2, yeyes), sca_face);
+        line(rImg, cv::Point(x1, ynose), cv::Point(x2, ynose), sca_face);
+        line(rImg, cv::Point(xhalf, y1), cv::Point(xhalf, ynose), sca_face);
+        line(rImg, cv::Point(xa, ygrin), cv::Point(xb, ygrin), sca_face);
+        line(rImg, cv::Point(xa, ygrin), cv::Point(xa, ychin - 1), sca_face);
+        line(rImg, cv::Point(xb, ygrin), cv::Point(xb, ychin - 1), sca_face);
+        rectangle(rImg, rect_face, sca_face);
+    }
 }

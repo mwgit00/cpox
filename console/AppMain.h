@@ -13,7 +13,8 @@
 #include "CVMain.h"
 
 
-#define ZOOM_STEPS  (20)
+#define ZOOM_STEPS      (20)
+#define S_COM_NO_ACK    ("--")
 
 
 class AppMain
@@ -31,6 +32,7 @@ public:
     void check_z();
     void reset_fps();
     void update_fps();
+    void update_com_status();
     void record_frame(cv::Mat& frame);
     void external_action(const bool flag, const uint32_t data = 0);
     void show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string& rsfps);
@@ -91,6 +93,12 @@ private:
     std::string s_current_phrase;
     uint32_t n_z;
 
+    // COM status logic
+
+    bool is_com_blinky_on;
+    std::string s_ack_level;
+    std::chrono::time_point<std::chrono::steady_clock> t_last_ack;
+
     // frame recording and frames-per-second (fps) info
 
     std::string record_sfps;
@@ -100,7 +108,8 @@ private:
     int record_frame_ct;
     int record_clip;
     int record_fps_ct;
-    
+    std::chrono::time_point<std::chrono::steady_clock> t_prev;
+
     // digital zoom, pan, tilt
 
     int zoom_ct;
@@ -113,7 +122,6 @@ private:
     tEventQueue tts_events;
     tEventQueue com_events;
     
-    std::chrono::time_point<std::chrono::steady_clock> t_prev;
     std::map<char, AppMain::tVVFuncPtr> ui_func_map;
     std::map<FSMEventCode, AppMain::tVRevFuncPtr> action_func_map;
     std::set<char> cvsm_keys;

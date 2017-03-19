@@ -12,8 +12,6 @@
 #include "COMTask.h"
 #include "AppMain.h"
 
-#define ZOOM_STEPS  (20)
-
 /*
 
 AppMain class
@@ -38,6 +36,8 @@ AppMain::AppMain() :
     s_strikes(""),
     s_current_phrase(""),
     n_z(0),
+    is_com_blinky_on(false),
+    s_ack_level(S_COM_NO_ACK),
     zoom_ct(0), // 1x
     pan_ct(0),  // centered
     tilt_ct(0)  // centered
@@ -136,6 +136,21 @@ void AppMain::update_fps()
     }
 }
 
+void AppMain::update_com_status()
+{
+    std::chrono::time_point<std::chrono::steady_clock> t_curr =
+        std::chrono::high_resolution_clock::now();
+    double tx = std::chrono::duration<double>(t_curr - t_last_ack).count();
+
+    // no COM activity in 2 seconds so turn off blinky
+    // and black the ack level string
+    if (tx > 2.0)
+    {
+        is_com_blinky_on = false;
+        s_ack_level = S_COM_NO_ACK;
+    }
+}
+
 void AppMain::record_frame(cv::Mat& frame)
 {
     // record frames to sequentially numbered files if enabled
@@ -161,20 +176,23 @@ void AppMain::record_frame(cv::Mat& frame)
 
 void AppMain::external_action(const bool flag, const uint32_t data)
 {
-    // sends command to an external serial device.
-    if (flag)
+    if (is_com_up)
     {
-        // configure digital pin as output and turn on
-     //   thread_com.post_cmd("dig0_cfg", "0")
-       //     thread_com.post_cmd("dig0_io", "1")
-        std::cout << util::GetString(IDS_APP_EXT_ON) << " " << data << std::endl;
-    }
-    else
-    {
-        // turn off digital pin and configure as input
-        //thread_com.post_cmd("dig0_io", "0")
-          //  thread_com.post_cmd("dig0_cfg", "1")
-        std::cout << util::GetString(IDS_APP_EXT_OFF) << std::endl;
+        // sends command to an external serial device.
+        if (flag)
+        {
+            // configure digital pin as output and turn on
+         //   thread_com.post_cmd("dig0_cfg", "0")
+           //     thread_com.post_cmd("dig0_io", "1")
+            std::cout << util::GetString(IDS_APP_EXT_ON) << " " << data << std::endl;
+        }
+        else
+        {
+            // turn off digital pin and configure as input
+            //thread_com.post_cmd("dig0_io", "0")
+              //  thread_com.post_cmd("dig0_cfg", "1")
+            std::cout << util::GetString(IDS_APP_EXT_OFF) << std::endl;
+        }
     }
 }
 
@@ -245,7 +263,18 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         fps_color, CV_FILLED);
     rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)),
         SCA_WHITE);
-    putText(img_final, rsfps, Point(10, hn * 3 + 14),
+    putText(img_final, rsfps, Point(10, (hn * 3) + 14),
+        FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
+
+    // COM status
+    Scalar com_color = (is_com_up) ? SCA_PURPLE : SCA_GRAY;
+    rectangle(img_final, Rect(Point(0, hn * 4), Point(wn, hn * 5)),
+        com_color, CV_FILLED);
+    rectangle(img_final, Rect(Point(0, hn * 4), Point(wn, hn * 5)),
+        SCA_WHITE);
+    rectangle(img_final, Rect(Point(4, (hn * 4) + 4), Point(4 + 12, (hn * 5) - 4)),
+        is_com_blinky_on ? SCA_BLUE_GREEN : SCA_BLACK, CV_FILLED);
+    putText(img_final, s_ack_level, Point(24, hn * 4 + 14),
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
 
     // draw speech recognition progress (timeout) bar if active
@@ -419,8 +448,9 @@ void AppMain::loop()
             }
         }
 
-        // update displays
+        // update status and displays
         update_fps();
+        update_com_status();
         show_monitor_window(img_viewer, face_info, record_sfps);
         check_z();
     }

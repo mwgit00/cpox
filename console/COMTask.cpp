@@ -61,7 +61,7 @@ void com_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
 {
     bool result = true;
 
-    HANDLE hComm;
+    HANDLE hComm = INVALID_HANDLE_VALUE;
     DCB dcb = { 0 };
     COMMTIMEOUTS timeouts;
 
@@ -186,4 +186,7 @@ void com_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
     }
 
     CloseHandle(hComm);
+
+    // report thread termination
+    rqtx.push(FSMEvent(FSMEventCode::E_COM_UP, 0));
 }

@@ -36,10 +36,11 @@ enum class FSMEventCode : uint32_t
 class FSMEvent
 {
 public:
+    
     FSMEvent();
-    FSMEvent(const FSMEventCode c);
-    FSMEvent(const FSMEventCode c, const uint32_t d);
-    FSMEvent(const FSMEventCode c, const std::string& rs);
+    explicit FSMEvent(const FSMEventCode c);
+    explicit FSMEvent(const FSMEventCode c, const uint32_t d);
+    explicit FSMEvent(const FSMEventCode c, const std::string& rs);
     virtual ~FSMEvent();
 
     const FSMEventCode& Code() const;

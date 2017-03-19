@@ -19,6 +19,7 @@ public:
 
 public:
 
+    bool is_face_found;
     bool is_eyes_detect_enabled;
     bool is_grin_detect_enabled;
 

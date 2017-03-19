@@ -76,4 +76,7 @@ void tts_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
     }
 
     ::CoUninitialize();
+
+    // report thread termination
+    rqtx.push(FSMEvent(FSMEventCode::E_TTS_UP, 0));
 }

@@ -1,6 +1,7 @@
 #include "resource.h"
 
 #include <iostream>
+#include <iomanip>
 
 #include "util.h"
 #include "AppMain.h"
@@ -162,8 +163,9 @@ void AppMain::UITest2(void)
 
 void AppMain::ActionTTSUp(const FSMEvent& r)
 {
-    std::cout << util::GetString(IDS_APP_TTS_UP) << std::endl;
-    is_tts_up = true;
+    is_tts_up = r.Data() ? true : false;
+    int ids = is_tts_up ? IDS_APP_TTS_UP : IDS_APP_TTS_DOWN;
+    std::cout << util::GetString(ids) << std::endl;
 }
 
 void AppMain::ActionTTSSay(const FSMEvent& r)
@@ -207,11 +209,26 @@ void AppMain::ActionComXOFF(const FSMEvent& r)
 
 void AppMain::ActionComUp(const FSMEvent& r)
 {
-    std::cout << util::GetString(IDS_APP_COM_UP) << std::endl;
-    is_com_up = true;
+    is_com_up = r.Data() ? true : false;
+    int ids = is_com_up ? IDS_APP_COM_UP : IDS_APP_COM_DOWN;
+    std::cout << util::GetString(ids) << std::endl;
 }
 
 void AppMain::ActionComAck(const FSMEvent& r)
 {
-    std::cout << "Ack!" << std::endl;
+    t_last_ack = std::chrono::high_resolution_clock::now();
+    is_com_blinky_on = !is_com_blinky_on;
+    if (r.Str().length() >= 3)
+    {
+        // character at index 2 is level [a-y]
+        // convert that to a string with the integer value
+        int n_ack_level = static_cast<int>(r.Str().at(2) - 'a');
+        std::ostringstream oss;
+        oss << std::setw(2) << std::setfill(' ') << n_ack_level;
+        s_ack_level = oss.str();
+    }
+    else
+    {
+        s_ack_level = S_COM_NO_ACK;
+    }
 }

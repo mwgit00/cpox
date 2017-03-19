@@ -96,6 +96,7 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
 
             // minimum eye width is some fraction of eye ROI width
             // both eyes ROI are the same size
+            
             Size min_size_eyes(
                 static_cast<int>(eyeL_ROI.size().width * min_eyes_scale),
                 static_cast<int>(eyeL_ROI.size().width * min_eyes_scale));
