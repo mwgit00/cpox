@@ -4,6 +4,11 @@
 #include "COMTask.h"
 
 
+#define LOOP_DELAY_MS           (10)
+#define LOOP_CT_1SEC            (1000 / LOOP_DELAY_MS)
+#define LOOP_CT_SELF_Q_DRAIN    (100 / LOOP_DELAY_MS)
+#define LOOP_CT_LEVEL_ADJ       (15)
+
 enum
 {
     STATE_IDLE,
@@ -13,6 +18,20 @@ enum
 };
 
 int com_state = STATE_IDLE;
+std::string s_ack = "???";
+tEventQueue self_q;
+
+
+bool send_cmd(HANDLE hComm, const char c_cmd, const char c_param)
+{
+    char buff[8];
+    DWORD nwritten;
+    buff[0] = 'x';
+    buff[1] = c_cmd;
+    buff[2] = c_param;
+    BOOL tx_result = WriteFile(hComm, buff, 3, &nwritten, NULL);
+    return (tx_result) ? true : false;
+}
 
 
 // returns a 1 if valid response found
@@ -24,6 +43,7 @@ void com_crank(char c, int& smval)
     {
         if (c == 'r')
         {
+            s_ack[0] = c;
             com_state = STATE_RESP;
         }
     }
@@ -31,12 +51,14 @@ void com_crank(char c, int& smval)
     {
         if (c >= '0' || c <= '3')
         {
+            s_ack[1] = c;
             com_state = STATE_CMD;
         }
         else if (c == 'r')
         {
             // wonky protocol
             // unexpected 'r' so it may be start of new response
+            s_ack[0] = c;
             com_state = STATE_RESP;
         }
         else
@@ -46,10 +68,11 @@ void com_crank(char c, int& smval)
     }
     else if (com_state == STATE_CMD)
     {
-        if (c >= 'a' || c <= 'y')
+        if ((c >= 'a') && (c <= 'y'))
         {
-            // valid response
+            // valid parameter in response is a-y
             // in this case, the 'r' is not the start of a response
+            s_ack[2] = c;
             smval = 1;
         }
         com_state = STATE_IDLE;
@@ -128,25 +151,30 @@ void com_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
     {
         char buff[64];
         bool is_running = true;
-        int k = 0;
+        int k_time_div = 0;
         
         while (is_running)
         {
+            std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_DELAY_MS));
+
             // read bytes from the COM port
-            // returns immediately
+            // call returns immediately
+            // then check result and see if any bytes were read
+            
             DWORD nread = 0;
             BOOL rx_result = ReadFile(hComm, buff, sizeof(buff), &nread, NULL);
             if (rx_result)
             {
                 if (nread)
                 {
+                    // run state machine on received byte(s) to process ACKs
                     for (DWORD i = 0; i < nread; i++)
                     {
                         int smval = 0;
                         com_crank(buff[i], smval);
                         if (smval)
                         {
-                            rqtx.push(FSMEvent(FSMEventCode::E_COM_ACK, std::string(buff, 3)));
+                            rqtx.push(FSMEvent(FSMEventCode::E_COM_ACK, s_ack));
                         }
                     }
                 }
@@ -154,30 +182,112 @@ void com_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
             
             while (rqrx.size())
             {
-                // end thread loop if commanded to halt
                 FSMEvent x = rqrx.pop();
-                if (x.Code() == FSMEventCode::E_TASK_HALT)
+                switch (x.Code())
                 {
-                    is_running = false;
-                    break;
+                    case FSMEventCode::E_TASK_HALT:
+                    {
+                        // end thread loop if commanded to halt
+                        is_running = false;
+                        break;
+                    }
+                    case FSMEventCode::E_COM_XON:
+                    {
+                        // command from app includes duration (count)
+                        // queue up a number of ON commands for external device
+                        // repeated commands must be sent for device to remain on
+
+                        uint32_t ct = x.Data();
+                        ct = (ct > 10) ? 10 : ct;
+                        for (uint32_t i = 0; i < ct; i++)
+                        {
+                            self_q.push(FSMEvent(FSMEventCode::E_COM_XON, 1));
+                        }
+                        k_time_div = 0; 
+                        break;
+                    }
+                    case FSMEventCode::E_COM_LEVEL:
+                    {
+                        // queue up fixed number of LEVEL commands for external device
+                        // each output will need its own commands queued for it
+                        // repeated commands must be sent to reach desired level
+                        uint32_t level = x.Data();
+                        for (uint32_t i = 0; i < LOOP_CT_LEVEL_ADJ; i++)
+                        {
+                            self_q.push(FSMEvent(FSMEventCode::E_COM_LEVEL_1, level));
+                            self_q.push(FSMEvent(FSMEventCode::E_COM_LEVEL_2, level));
+                        }
+                        k_time_div = 0;
+                        break;
+                    }
+                    case FSMEventCode::E_COM_XOFF:
+                    {
+                        // flush any self-queued commands
+                        // device's own timer will shut it off
+                        self_q.clear();
+                        k_time_div = 0;
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
                 }
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-            // periodic ping when idle
-            k++;
-            if (k == 100)
+            if (self_q.empty())
             {
-                k = 0;
-                DWORD nwritten;
-                buff[0] = 'x';
-                buff[1] = '0';
-                buff[2] = 'a';
-                BOOL tx_result = WriteFile(hComm, buff, 3, &nwritten, NULL);
-                if (!tx_result)
+                // periodic ping when idle (self queue is empty)
+
+                k_time_div++;
+                if (k_time_div == LOOP_CT_1SEC)
                 {
-                    is_running = false;
+                    k_time_div = 0;
+                    if (!send_cmd(hComm, '0', 'a'))
+                    {
+                        // kill loop if this fails for some reason
+                        // like if USB COM adapter gets yanked
+                        is_running = false;
+                    }
+                }
+            }
+            else
+            {
+                // handle self-queued events at their own rate
+
+                if (k_time_div == 0)
+                {
+                    bool result = false;
+                    FSMEvent x = self_q.pop();
+                    switch (x.Code())
+                    {
+                        case FSMEventCode::E_COM_XON:
+                        {
+                            ///@TODO -- FIXME use proper command
+                            result = send_cmd(hComm, '0', 'a');
+                            break;
+                        }
+                        case FSMEventCode::E_COM_LEVEL_1:
+                        {
+                            result = send_cmd(hComm, '1', 'a' + x.Data());
+                            break;
+                        }
+                        case FSMEventCode::E_COM_LEVEL_2:
+                        {
+                            result = send_cmd(hComm, '2', 'a' + x.Data());
+                            break;
+                        }
+                        default:
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                k_time_div++;
+                if (k_time_div == LOOP_CT_SELF_Q_DRAIN)
+                {
+                    k_time_div = 0;
                 }
             }
         }

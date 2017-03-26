@@ -14,6 +14,7 @@ public:
 
     size_t size(void) const;
     bool empty(void) const;
+    void clear(void);
     void push(const T& x);
     T pop(void);
 
@@ -33,6 +34,13 @@ template <typename T>
 bool MTQueue<T>::empty(void) const
 {
     return mq.empty();
+}
+
+template <typename T>
+void MTQueue<T>::clear(void)
+{
+    std::lock_guard<std::mutex> lock(mx);
+    mq = {};
 }
 
 template <typename T>

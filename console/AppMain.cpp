@@ -65,6 +65,8 @@ AppMain::AppMain() :
     ui_func_map[KEY_PT0] = &AppMain::UIResetPanTilt;
     ui_func_map[KEY_TEST1] = &AppMain::UITest1;
     ui_func_map[KEY_TEST2] = &AppMain::UITest2;
+    ui_func_map[KEY_TEST3] = &AppMain::UITest3;
+    ui_func_map[KEY_TEST4] = &AppMain::UITest4;
 
     action_func_map[FSMEventCode::E_TTS_SAY] = &AppMain::ActionTTSSay;
     action_func_map[FSMEventCode::E_TTS_UP] = &AppMain::ActionTTSUp;
@@ -73,6 +75,7 @@ AppMain::AppMain() :
     action_func_map[FSMEventCode::E_SR_STRIKES] = &AppMain::ActionSRStrikes;
     action_func_map[FSMEventCode::E_COM_XON] = &AppMain::ActionComXON;
     action_func_map[FSMEventCode::E_COM_XOFF] = &AppMain::ActionComXOFF;
+    action_func_map[FSMEventCode::E_COM_LEVEL] = &AppMain::ActionComLevel;
     action_func_map[FSMEventCode::E_COM_UP] = &AppMain::ActionComUp;
     action_func_map[FSMEventCode::E_COM_ACK] = &AppMain::ActionComAck;
 
@@ -181,16 +184,12 @@ void AppMain::external_action(const bool flag, const uint32_t data)
         // sends command to an external serial device.
         if (flag)
         {
-            // configure digital pin as output and turn on
-         //   thread_com.post_cmd("dig0_cfg", "0")
-           //     thread_com.post_cmd("dig0_io", "1")
+            com_events.push(FSMEvent(FSMEventCode::E_COM_XON, data));
             std::cout << util::GetString(IDS_APP_EXT_ON) << " " << data << std::endl;
         }
         else
         {
-            // turn off digital pin and configure as input
-            //thread_com.post_cmd("dig0_io", "0")
-              //  thread_com.post_cmd("dig0_cfg", "1")
+            com_events.push(FSMEvent(FSMEventCode::E_COM_XOFF));
             std::cout << util::GetString(IDS_APP_EXT_OFF) << std::endl;
         }
     }

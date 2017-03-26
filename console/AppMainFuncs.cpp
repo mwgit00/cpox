@@ -53,7 +53,7 @@ void AppMain::UIHelp(void)
 void AppMain::UITestExt(void)
 {
     n_z = 10;
-    external_action(true);
+    external_action(true, 10);
 }
 
 void AppMain::UIRecord(void)
@@ -160,6 +160,18 @@ void AppMain::UITest2(void)
     app_events.push(FSMEvent(FSMEventCode::E_SR_RESULT, 1));
 }
 
+void AppMain::UITest3(void)
+{
+    // COM min level
+    app_events.push(FSMEvent(FSMEventCode::E_COM_LEVEL, 0));
+}
+
+void AppMain::UITest4(void)
+{
+    // COM max level
+    app_events.push(FSMEvent(FSMEventCode::E_COM_LEVEL, 5));
+}
+
 
 void AppMain::ActionTTSUp(const FSMEvent& r)
 {
@@ -207,6 +219,14 @@ void AppMain::ActionComXOFF(const FSMEvent& r)
     s_strikes = "";
 }
 
+void AppMain::ActionComLevel(const FSMEvent& r)
+{
+    if (is_com_up)
+    {
+        com_events.push(r);
+    }
+}
+
 void AppMain::ActionComUp(const FSMEvent& r)
 {
     is_com_up = r.Data() ? true : false;
@@ -220,12 +240,20 @@ void AppMain::ActionComAck(const FSMEvent& r)
     is_com_blinky_on = !is_com_blinky_on;
     if (r.Str().length() >= 3)
     {
-        // character at index 2 is level [a-y]
+        // character at index 2 is level [a-y] or ?
         // convert that to a string with the integer value
-        int n_ack_level = static_cast<int>(r.Str().at(2) - 'a');
-        std::ostringstream oss;
-        oss << std::setw(2) << std::setfill(' ') << n_ack_level;
-        s_ack_level = oss.str();
+        char c = r.Str().at(2);
+        if ((c >= 'a') && (c <= 'y'))
+        {
+            int n_ack_level = static_cast<int>(c - 'a') + 1;
+            std::ostringstream oss;
+            oss << std::setw(2) << std::setfill(' ') << n_ack_level;
+            s_ack_level = oss.str();
+        }
+        else
+        {
+            s_ack_level = "?";
+        }
     }
     else
     {

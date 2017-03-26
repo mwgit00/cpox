@@ -30,6 +30,9 @@ enum class FSMEventCode : uint32_t
     E_COM_XOFF =    0x41u,  ///< COM external action end
     E_COM_UP =      0x42u,  ///< COM task initialized successfully
     E_COM_ACK =     0x43u,  ///< COM task sent ack/response
+    E_COM_LEVEL =   0x44u,  ///< COM external action level adjustment
+    E_COM_LEVEL_1 = 0x45u,  ///< COM external action (output 1) level adjustment
+    E_COM_LEVEL_2 = 0x46u,  ///< COM external action (output 2) level adjustment
     E_TASK_HALT =   0xF0u,  ///< tell worker task to terminate
 };
 
