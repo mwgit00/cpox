@@ -163,6 +163,7 @@
     <ClInclude Include="FSMSnapShot.h" />
     <ClInclude Include="MissedDetectionTrigger.h" />
     <ClInclude Include="MTQueue.hpp" />
+    <ClInclude Include="PhraseManager.h" />
     <ClInclude Include="PolledTimer.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -182,6 +183,7 @@
     <ClCompile Include="FSMPhrase.cpp" />
     <ClCompile Include="FSMSnapShot.cpp" />
     <ClCompile Include="MissedDetectionTrigger.cpp" />
+    <ClCompile Include="PhraseManager.cpp" />
     <ClCompile Include="PolledTimer.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="TTSTask.cpp" />

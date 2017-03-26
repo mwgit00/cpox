@@ -477,29 +477,24 @@ void AppMain::Go()
         std::cout << "Path not found" << std::endl;
     }
 
-        /*
-            // lazy hard-code for the port settings
-            // (used a Keyspan USB-Serial adapter)
-            if thread_com.open("/dev/cu.USA19H142P1.1", 9600) :
-                std::cout << "Serial Port Opened OK"
-            else:
-        std::cout << "Failure opening serial port!"
-        */
-
-        /*
-            if phrase_mgr.load("phrases.txt") :
-                std::cout << "Phrase File Loaded OK"
-            else :
-                std::cout << "Failure loading phrases!"
-                */
+    if (phrase_mgr.load("phrases.txt"))
+    {
+        std::cout << "Phrase file loaded OK" << std::endl;
+    }
+    else
+    {
+        std::cout << "Failure loading phrases!" << std::endl;
+    }
 
     // away we go
     if (cvx.load_cascades(haar_cascade_path))
     {
         // start helper tasks
+        ///@TODO -- fix hard code for COM port
         std::thread tts_task(tts_task_func,
             std::ref(tts_events), std::ref(app_events));
         std::thread com_task(com_task_func,
+            "COM2",
             std::ref(com_events), std::ref(app_events));
 
         loop();

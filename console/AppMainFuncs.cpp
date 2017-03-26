@@ -31,7 +31,7 @@ void AppMain::UITestSay(void)
     {
         // test retrieval and speaking of next phrase
         // it will be saved for manual recognition step
-        s_current_phrase = "this is a test"; ///@TODO -- phrase_mgr.next_phrase()
+        s_current_phrase = phrase_mgr.next_phrase();
         tts_events.push(FSMEvent(FSMEventCode::E_TTS_SAY, s_current_phrase));
     }
 }
@@ -191,7 +191,7 @@ void AppMain::ActionSRPhrase(const FSMEvent& r)
     // retrieve next phrase to be repeated
     // and issue command to say it
     // phrase is stashed for upcoming recognition step...
-    s_current_phrase = "player will repeat this"; ///@TODO -- FIXME phrase_mgr.next_phrase()
+    s_current_phrase = phrase_mgr.next_phrase();
     tts_events.push(FSMEvent(FSMEventCode::E_TTS_SAY, s_current_phrase));
 }
 

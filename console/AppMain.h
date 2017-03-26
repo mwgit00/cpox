@@ -11,6 +11,7 @@
 #include "FaceInfo.h"
 #include "FSMLoop.h"
 #include "CVMain.h"
+#include "PhraseManager.h"
 
 
 #define ZOOM_STEPS      (20)
@@ -84,6 +85,7 @@ private:
     CVMain cvx;
     FSMLoop cvsm;
     FSMPhrase psm;
+    PhraseManager phrase_mgr;
     
     // high level state info
 

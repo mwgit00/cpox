@@ -80,7 +80,10 @@ void com_crank(char c, int& smval)
 }
 
 
-void com_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
+void com_task_func(
+    const std::string& rsPortName,
+    tEventQueue& rqrx,
+    tEventQueue& rqtx)
 {
     bool result = true;
 
@@ -96,7 +99,10 @@ void com_task_func(tEventQueue& rqrx, tEventQueue& rqtx)
     timeouts.WriteTotalTimeoutMultiplier = 0;
     timeouts.WriteTotalTimeoutConstant = 0;
 
-    hComm = CreateFile(L"COM2",
+    // do unicode name shenanigans
+    std::wstring ws(rsPortName.begin(), rsPortName.end());
+
+    hComm = CreateFile(ws.c_str(),
         GENERIC_READ | GENERIC_WRITE,
         0,
         0,

@@ -69,6 +69,9 @@
     <ClInclude Include="COMTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PhraseManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -114,6 +117,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="COMTask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PhraseManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
