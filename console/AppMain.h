@@ -12,9 +12,9 @@
 #include "FSMLoop.h"
 #include "CVMain.h"
 #include "PhraseManager.h"
+#include "Settings.h"
 
 
-#define ZOOM_STEPS      (20)
 #define S_COM_NO_ACK    ("--")
 
 
@@ -80,6 +80,10 @@ public:
     void ActionComUp(const FSMEvent& r);
     void ActionComAck(const FSMEvent& r);
 
+public:
+
+    Settings cfg;
+
 private:
 
     CVMain cvx;
@@ -107,7 +111,6 @@ private:
     // frame recording and frames-per-second (fps) info
 
     std::string record_sfps;
-    std::string record_path;
     bool is_record_path_ok;
     bool is_record_enabled;
     int record_frame_ct;

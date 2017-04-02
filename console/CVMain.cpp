@@ -29,19 +29,19 @@ bool CVMain::load_cascades(const std::string& path)
 
     if (!cc_face.load(face_cascade_name))
     {
-        std::cout << "Face cascade data failed to open." << std::endl;;
+        std::cout << "Face cascade data failed to open!" << std::endl;;
         result = false;
     }
 
     if (!cc_eyes.load(eyes_cascade_name))
     {
-        std::cout << "Eyes cascade data failed to open." << std::endl;;
+        std::cout << "Eyes cascade data failed to open!" << std::endl;;
         result = false;
     }
 
     if (!cc_grin.load(grin_cascade_name))
     {
-        std::cout << "Grin cascade data failed to open." << std::endl;;
+        std::cout << "Grin cascade data failed to open!" << std::endl;;
         result = false;
     }
 

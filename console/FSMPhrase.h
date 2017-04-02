@@ -2,6 +2,7 @@
 #define FSM_PHRASE_H_
 
 #include "defs.h"
+#include "defs_cfg.h"
 #include "FSMEvent.h"
 #include "FSMSnapShot.h"
 #include "PolledTimer.h"
@@ -19,14 +20,8 @@ public:
         STATE_STOP = 4,
     };
 
-    enum
-    {
-        WAIT_TIMEOUT_SEC = 10, ///< interval between end of rec and start of spk
-        REC_TIMEOUT_SEC = 25, ///< at least 10sec longer than poxrec.py timeout
-        SPK_TIMEOUT_SEC = 10, ///< should be longer than longest phrase
-    };
-
-    FSMPhrase();
+    FSMPhrase() = delete;
+    FSMPhrase(tPhraseCfg& r);
     virtual ~FSMPhrase();
 
     void check_timers(tEventQueue& rq);
@@ -39,11 +34,12 @@ private:
 
 private:
 
-    uint32_t state;
+    tPhraseCfg& rCfg;
+    
+    int state;
+    int strikes;
     PolledTimer sr_timer;
     FSMSnapShot snapshot;
-
-    uint32_t strikes;
 };
 
 #endif // FSM_PHRASE_H_

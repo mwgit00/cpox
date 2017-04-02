@@ -1,0 +1,19 @@
+%YAML:1.0
+---
+app:
+   zoom_steps: 20
+   zoom_max: 4
+   com_port: COM2
+   rec_path: "C:\\work\\movie"
+   cascade_path: "C:\\opencv-3.2.0\\opencv\\build\\etc\\haarcascades\\"
+loop:
+   max_level: 10
+   inh_time: 5
+   norm_time: 4
+   warn_time: 3
+   act_time: 5
+phrase:
+   wait_time: 10
+   rec_time: 25
+   spk_time: 10
+   file_name: "phrases.txt"

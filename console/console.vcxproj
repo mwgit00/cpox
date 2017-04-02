@@ -156,6 +156,7 @@
     <ClInclude Include="COMTask.h" />
     <ClInclude Include="CVMain.h" />
     <ClInclude Include="defs.h" />
+    <ClInclude Include="defs_cfg.h" />
     <ClInclude Include="FaceInfo.h" />
     <ClInclude Include="FSMEvent.h" />
     <ClInclude Include="FSMLoop.h" />
@@ -166,6 +167,7 @@
     <ClInclude Include="PhraseManager.h" />
     <ClInclude Include="PolledTimer.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Settings.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TTSTask.h" />
@@ -185,6 +187,7 @@
     <ClCompile Include="MissedDetectionTrigger.cpp" />
     <ClCompile Include="PhraseManager.cpp" />
     <ClCompile Include="PolledTimer.cpp" />
+    <ClCompile Include="Settings.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="TTSTask.cpp" />
     <ClCompile Include="util.cpp" />

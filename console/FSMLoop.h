@@ -2,6 +2,7 @@
 #define FSM_LOOP_H_
 
 #include "defs.h"
+#include "defs_cfg.h"
 #include "FSMEvent.h"
 #include "FSMSnapShot.h"
 #include "PolledTimer.h"
@@ -21,16 +22,8 @@ public:
         STATE_ACT = 4, ///< act after too many misses
     };
 
-    // timer settings
-    enum
-    {
-        INH_TIMEOUT_SEC = 5, ///< delay before starting
-        NORM_TIMEOUT_SEC = 4, ///< no face / eye in this time, goes to WARN
-        WARN_TIMEOUT_SEC = 3, ///< no face / eye in this time, goes to ACT
-        ACT_TIMEOUT_SEC = 5, ///< duration of ACT
-    };
-
-    FSMLoop();
+    FSMLoop() = delete;
+    FSMLoop(tLoopCfg& r);
     virtual ~FSMLoop();
 
     bool is_idle() const;
@@ -45,11 +38,12 @@ private:
 
 private:
 
-    uint32_t state;
+    tLoopCfg& rCfg;
+
+    int state;
+    int level;
     PolledTimer cv_timer;
     FSMSnapShot snapshot;
-
-    uint32_t level;
 };
 
 #endif // FSM_LOOP_H_

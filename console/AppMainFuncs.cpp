@@ -86,7 +86,7 @@ void AppMain::UIMakeMovie(void)
 void AppMain::UIZoomIn(void)
 {
     // zoom in
-    zoom_ct = (zoom_ct < ZOOM_STEPS) ? zoom_ct + 1 : zoom_ct;
+    zoom_ct = (zoom_ct < cfg.app.zoom_steps) ? zoom_ct + 1 : zoom_ct;
 }
 
 void AppMain::UIZoomOut(void)

@@ -3,10 +3,10 @@
 #include "defs.h"
 
 
-FSMLoop::FSMLoop() :
+FSMLoop::FSMLoop(tLoopCfg& r) :
+    rCfg(r),
     state(STATE_IDLE),
-    cv_timer(),
-    level(0u)
+    level(0)
 {
     snapshot.sec = 0;
     snapshot.color = SCA_BLACK;
@@ -26,7 +26,7 @@ bool FSMLoop::is_idle() const
 void FSMLoop::_to_norm()
 {
     // helper for transition to norm state (no outputs generated)
-    cv_timer.start(NORM_TIMEOUT_SEC);
+    cv_timer.start(rCfg.norm_time);
     state = STATE_NORM;
 }
 
@@ -34,11 +34,11 @@ void FSMLoop::_to_act(tEventQueue& rq)
 {
     // helper for transition to ACT state
     
-    cv_timer.start(ACT_TIMEOUT_SEC);
+    cv_timer.start(rCfg.act_time);
     state = STATE_ACT;
     
     // increment level unless it has reached maximum
-    if (level < APP_MAX_LEVEL)
+    if (level < rCfg.max_level)
     {
         level += 1;
     }
@@ -134,7 +134,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
         {
             if (this_event.Data() == KEY_GO)
             {
-                cv_timer.start(FSMLoop::INH_TIMEOUT_SEC);
+                cv_timer.start(rCfg.inh_time);
                 state = STATE_INH;
                 // announce countdown has started
                 rq.push(FSMEvent(FSMEventCode::E_TTS_SAY, "get ready"));
@@ -160,7 +160,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
         }
         else if (this_event.Code() == FSMEventCode::E_TMR_CV)
         {
-            cv_timer.start(FSMLoop::WARN_TIMEOUT_SEC);
+            cv_timer.start(rCfg.warn_time);
             state = STATE_WARN;
         }
         else if (this_event.Code() == FSMEventCode::E_SR_FAIL)

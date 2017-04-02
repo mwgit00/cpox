@@ -28,6 +28,8 @@ using namespace cv;
 
 
 AppMain::AppMain() :
+    cvsm(cfg.loop),
+    psm(cfg.phrase),
     is_looping(true),
     is_eyes_detect_enabled(true),
     is_grin_detect_enabled(false),
@@ -82,8 +84,6 @@ AppMain::AppMain() :
     // info for frame capture and recording
 
     record_sfps = "???";
-    record_path = "c:\\work\\movie\\";
-    is_record_path_ok = util::IsPathOK(record_path);
     is_record_enabled = false;
     record_frame_ct = 0;
     record_clip = 0;
@@ -161,7 +161,7 @@ void AppMain::record_frame(cv::Mat& frame)
     if (is_record_path_ok && is_record_enabled)
     {
         std::ostringstream oss;
-        if (record_path.back() != '\\')
+        if (cfg.app.rec_path.back() != '\\')
         {
             // add slash if path doesn't end with one
             oss << "\\";
@@ -171,7 +171,7 @@ void AppMain::record_frame(cv::Mat& frame)
         oss << "_" << std::setfill('0') << std::setw(5) << record_frame_ct;
         oss << ".png";
         
-        std::string file_path = record_path + oss.str();
+        std::string file_path = cfg.app.rec_path + oss.str();
         record_frame_ct += 1;
         imwrite(file_path, frame);
     }
@@ -282,7 +282,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     int x = psm.Snapshot().prog;
     if (x > 0)
     {
-        int rec_sec = FSMPhrase::REC_TIMEOUT_SEC;
+        int rec_sec = cfg.phrase.rec_time;
         int wb = 10;
         int x1 = wn;
         int x2 = wn + (rec_sec - x) * wb;
@@ -375,14 +375,14 @@ void AppMain::loop()
         static_cast<int>(capture_size.width * img_scale),
         static_cast<int>(capture_size.height * img_scale));
 
-    // determine parameters for 1x to 4x zoom
-    const int zoom_fac = 4;
+    // determine parameters applying digital zoom
+    const int zoom_fac = cfg.app.zoom_max;
     const int wzoom = capture_size.width;
     const int hzoom = capture_size.height;
     const int max_zoom_offset_w = (wzoom / 2) - ((wzoom / zoom_fac) / 2);
     const int max_zoom_offset_h = (hzoom / 2) - ((hzoom / zoom_fac) / 2);
-    const int zoom_step_w = (max_zoom_offset_w) / ZOOM_STEPS;
-    const int zoom_step_h = (max_zoom_offset_h) / ZOOM_STEPS;
+    const int zoom_step_w = (max_zoom_offset_w) / cfg.app.zoom_steps;
+    const int zoom_step_h = (max_zoom_offset_h) / cfg.app.zoom_steps;
 
     reset_fps();
 
@@ -466,35 +466,37 @@ void AppMain::loop()
 
 void AppMain::Go()
 {
-    std::string haar_cascade_path = "C:\\opencv-3.2.0\\opencv\\build\\etc\\haarcascades\\";
-
+    std::string settings_file = "settings.yaml";
+    
     std::cout << "*** CPOX for Windows 7 64-Bit OS ***" << std::endl;
 
-    std::cout << "Recording path:  ";
-    std::cout << "\"" << record_path << "\"" << std::endl;
-    if (!is_record_path_ok)
+    if (!cfg.Read(settings_file))
     {
-        std::cout << "Path not found" << std::endl;
+        std::cout << "No settings file.  Applying default settings!" << std::endl;
+        cfg.ApplyDefaults();
+        cfg.Write(settings_file);
     }
 
-    if (phrase_mgr.load("phrases.txt"))
+    is_record_path_ok = util::IsPathOK(cfg.app.rec_path);
+    
+    if (!is_record_path_ok)
     {
-        std::cout << "Phrase file loaded OK" << std::endl;
+        std::cout << "Recording path not found!" << std::endl;
     }
-    else
+
+    if (!phrase_mgr.load(cfg.phrase.file_name))
     {
         std::cout << "Failure loading phrases!" << std::endl;
     }
 
     // away we go
-    if (cvx.load_cascades(haar_cascade_path))
+    if (cvx.load_cascades(cfg.app.cascade_path))
     {
         // start helper tasks
-        ///@TODO -- fix hard code for COM port
         std::thread tts_task(tts_task_func,
             std::ref(tts_events), std::ref(app_events));
         std::thread com_task(com_task_func,
-            "COM2",
+            cfg.app.com_port,
             std::ref(com_events), std::ref(app_events));
 
         loop();

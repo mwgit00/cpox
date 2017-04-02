@@ -49,6 +49,4 @@
 #define KEY_TEST3       ('#')
 #define KEY_TEST4       ('$')
 
-#define APP_MAX_LEVEL   (10u)
-
 #endif // DEFS_H_

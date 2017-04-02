@@ -1,10 +1,10 @@
 #include "FSMPhrase.h"
 
 
-FSMPhrase::FSMPhrase() :
+FSMPhrase::FSMPhrase(tPhraseCfg& r) :
+    rCfg(r),
     state(STATE_STOP),
-    sr_timer(),
-    strikes(0u)
+    strikes(0)
 {
     snapshot.color = SCA_BLACK;
 }
@@ -18,7 +18,7 @@ FSMPhrase::~FSMPhrase()
 void FSMPhrase::_to_wait(void)
 {
     // helper for transition to wait state (no outputs generated)
-    sr_timer.start(WAIT_TIMEOUT_SEC);
+    sr_timer.start(rCfg.wait_time);
     state = STATE_WAIT;
 }
 
@@ -88,7 +88,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
         if (this_event.Code() == FSMEventCode::E_TMR_SR)
         {
             // new phrase to be spoken and repeated
-            sr_timer.start(SPK_TIMEOUT_SEC);
+            sr_timer.start(rCfg.spk_time);
             state = STATE_SPEAKING;
             rq.push(FSMEvent(FSMEventCode::E_SR_PHRASE));
         }
@@ -104,7 +104,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
         else if (this_event.Code() == FSMEventCode::E_TTS_IDLE)
         {
             // begin recognition
-            sr_timer.start(REC_TIMEOUT_SEC);
+            sr_timer.start(rCfg.rec_time);
             state = STATE_RECOGNIZING;
             rq.push(FSMEvent(FSMEventCode::E_SR_REC));
         }
