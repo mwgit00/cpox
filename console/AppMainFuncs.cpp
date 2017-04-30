@@ -53,7 +53,7 @@ void AppMain::UIHelp(void)
 void AppMain::UITestExt(void)
 {
     n_z = 10;
-    external_action(true, 10);
+    external_action(true, 100);
 }
 
 void AppMain::UIRecord(void)
@@ -162,14 +162,14 @@ void AppMain::UITest2(void)
 
 void AppMain::UITest3(void)
 {
-    // COM min level
+    // set ext device minimum output level
     app_events.push(FSMEvent(FSMEventCode::E_COM_LEVEL, 0));
 }
 
 void AppMain::UITest4(void)
 {
-    // COM max level
-    app_events.push(FSMEvent(FSMEventCode::E_COM_LEVEL, 5));
+    // set ext device maximum output level (limited in configuration)
+    app_events.push(FSMEvent(FSMEventCode::E_COM_LEVEL, cfg.loop.max_level));
 }
 
 

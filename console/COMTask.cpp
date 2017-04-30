@@ -4,17 +4,42 @@
 #include "COMTask.h"
 
 
+// delay per iteration of sleepy com loop (100Hz)
 #define LOOP_DELAY_MS           (10)
+
+// number of loop counts per second, determines "heartbeat" rate
 #define LOOP_CT_1SEC            (1000 / LOOP_DELAY_MS)
+
+// number of loop counts before self-queued commands are popped
+// commands on queue should not be drained faster than 10Hz rate
+// this is a limitation of the external device
 #define LOOP_CT_SELF_Q_DRAIN    (100 / LOOP_DELAY_MS)
+
+// number of commands that are queued to adjust output levels
 #define LOOP_CT_LEVEL_ADJ       (15)
+
+// number of commands to achieve maximum on time of 10 seconds
+#define LOOP_MAX_ON_CT_SEC      (10 * LOOP_CT_SELF_Q_DRAIN)
+
 
 enum
 {
-    STATE_IDLE,
+    CMD_SYNC =      'C',    // start of cmd recognized by ext device
+    CMD_RESP =      'R',    // start of response to cmd
+    CMD_PING =      '0',    // ping, response has max of level settings
+    CMD_LEVEL_1 =   '1',    // set level 1 to value a-y (25 settings)
+    CMD_LEVEL_2 =   '2',    // set level 2 to value a-y (25 settings)
+    CMD_OUTPUT_ON = '3',    // activate outputs
+    CMD_VAL_MIN =   'a',    // minimum value setting
+    CMD_VAL_MAX =   'y',    // maximum value setting
+};
+
+
+enum
+{
+    STATE_IDLE = 0,
     STATE_RESP,
     STATE_CMD,
-    STATE_PARAM,
 };
 
 int com_state = STATE_IDLE;
@@ -22,11 +47,14 @@ std::string s_ack = "???";
 tEventQueue self_q;
 
 
+// command is of form (C[0-3][a-y])
+// returns true if TX through port is OK
+
 bool send_cmd(HANDLE hComm, const char c_cmd, const char c_param)
 {
     char buff[8];
     DWORD nwritten;
-    buff[0] = 'x';
+    buff[0] = CMD_SYNC;
     buff[1] = c_cmd;
     buff[2] = c_param;
     BOOL tx_result = WriteFile(hComm, buff, 3, &nwritten, NULL);
@@ -34,14 +62,14 @@ bool send_cmd(HANDLE hComm, const char c_cmd, const char c_param)
 }
 
 
-// returns a 1 if valid response found
-// response is of form (r[0-3][a-y])
+// response is of form (R[0-3][a-y])
+// returns a 1 in smval if valid response found
 
 void com_crank(char c, int& smval)
 {
     if (com_state == STATE_IDLE)
     {
-        if (c == 'r')
+        if (c == CMD_RESP)
         {
             s_ack[0] = c;
             com_state = STATE_RESP;
@@ -49,15 +77,15 @@ void com_crank(char c, int& smval)
     }
     else if (com_state == STATE_RESP)
     {
-        if (c >= '0' || c <= '3')
+        if ((c >= CMD_PING) || (c <= CMD_OUTPUT_ON))
         {
             s_ack[1] = c;
             com_state = STATE_CMD;
         }
-        else if (c == 'r')
+        else if (c == CMD_RESP)
         {
-            // wonky protocol
-            // unexpected 'r' so it may be start of new response
+            // unexpected start of response
+            // but could be out of sync so treat it as new response
             s_ack[0] = c;
             com_state = STATE_RESP;
         }
@@ -68,13 +96,14 @@ void com_crank(char c, int& smval)
     }
     else if (com_state == STATE_CMD)
     {
-        if ((c >= 'a') && (c <= 'y'))
+        if ((c >= CMD_VAL_MIN) && (c <= CMD_VAL_MAX))
         {
-            // valid parameter in response is a-y
-            // in this case, the 'r' is not the start of a response
+            // valid value found
             s_ack[2] = c;
             smval = 1;
         }
+
+        // always go back to idle state
         com_state = STATE_IDLE;
     }
 }
@@ -204,7 +233,7 @@ void com_task_func(
                         // repeated commands must be sent for device to remain on
 
                         uint32_t ct = x.Data();
-                        ct = (ct > 10) ? 10 : ct;
+                        ct = (ct > LOOP_MAX_ON_CT_SEC) ? LOOP_MAX_ON_CT_SEC : ct;
                         for (uint32_t i = 0; i < ct; i++)
                         {
                             self_q.push(FSMEvent(FSMEventCode::E_COM_XON, 1));
@@ -229,7 +258,7 @@ void com_task_func(
                     case FSMEventCode::E_COM_XOFF:
                     {
                         // flush any self-queued commands
-                        // device's own timer will shut it off
+                        // external device's own timer will shut it off
                         self_q.clear();
                         k_time_div = 0;
                         break;
@@ -249,7 +278,7 @@ void com_task_func(
                 if (k_time_div == LOOP_CT_1SEC)
                 {
                     k_time_div = 0;
-                    if (!send_cmd(hComm, '0', 'a'))
+                    if (!send_cmd(hComm, CMD_PING, CMD_VAL_MIN))
                     {
                         // kill loop if this fails for some reason
                         // like if USB COM adapter gets yanked
@@ -265,22 +294,24 @@ void com_task_func(
                 {
                     bool result = false;
                     FSMEvent x = self_q.pop();
+                    char c_value = static_cast<char>(x.Data());
                     switch (x.Code())
                     {
                         case FSMEventCode::E_COM_XON:
                         {
-                            ///@TODO -- FIXME use proper command
-                            result = send_cmd(hComm, '0', 'a');
+                            result = send_cmd(hComm, CMD_OUTPUT_ON, CMD_VAL_MIN);
                             break;
                         }
                         case FSMEventCode::E_COM_LEVEL_1:
                         {
-                            result = send_cmd(hComm, '1', 'a' + x.Data());
+                            char c_level = CMD_VAL_MIN + c_value;
+                            result = send_cmd(hComm, CMD_LEVEL_1, c_level);
                             break;
                         }
                         case FSMEventCode::E_COM_LEVEL_2:
                         {
-                            result = send_cmd(hComm, '2', 'a' + x.Data());
+                            char c_level = CMD_VAL_MIN + c_value;
+                            result = send_cmd(hComm, CMD_LEVEL_2, c_level);
                             break;
                         }
                         default:

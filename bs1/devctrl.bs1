@@ -1,7 +1,7 @@
 ' {$STAMP BS1}
 ' {$PBASIC 1.0}
 
-' This program waits for the character "X" followed by a
+' This program waits for the character "C" followed by a
 ' binary byte at the serial input (inverted, 2400 baud, N81).
 
 SYMBOL  sym_cmd_null        = 0 ' do nothing
@@ -60,10 +60,10 @@ main:
 cmd_loop:
 
   ' send reply (also sends power-up message)
-  SEROUT npin_i_stx, sym_baud, ("r", b0_cmd, b1_val)
+  SEROUT npin_i_stx, sym_baud, ("R", b0_cmd, b1_val)
 
   ' wait for command
-  SERIN npin_i_srx, sym_baud, ("x"), b0_cmd, b1_val
+  SERIN npin_i_srx, sym_baud, ("C"), b0_cmd, b1_val
 
   IF b0_cmd < "0" THEN cmd_nak  ' cmd is 0-3
   IF b0_cmd > "3" THEN cmd_nak
