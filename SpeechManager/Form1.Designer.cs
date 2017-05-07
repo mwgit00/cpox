@@ -1,4 +1,4 @@
-﻿namespace netsr2
+﻿namespace SpeechManager
 {
     partial class Form1
     {

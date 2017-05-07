@@ -13,15 +13,21 @@ using System.Speech.Synthesis;
 using System.Threading;
 
 
-namespace netsr2
+
+namespace SpeechManager
 {
+    public delegate void UDPReceiveEventDelegate(UDPEventArgs e);
+
     public partial class Form1 : Form
     {
-        public SpeechManager.UDPServer theServer;
+        private const string s_tts_ack = "tts:0";
+        private const string s_rec_ack = "rec:";
+
+        public SpeechManager.UDPServer theServer = new SpeechManager.UDPServer();
         public Thread T;
 
-        public SpeechRecognitionEngine recognizer;
-        public SpeechSynthesizer synth;
+        public SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
+        public SpeechSynthesizer synth = new SpeechSynthesizer();
         public String phrase = "this is a test";
         public int word_ct = 0;
 
@@ -34,7 +40,6 @@ namespace netsr2
         {
             // set up all the speech synthesis stuff
 
-            synth = new SpeechSynthesizer();
             synth.SelectVoiceByHints(VoiceGender.Female);
             synth.SetOutputToDefaultAudioDevice();
 
@@ -47,7 +52,6 @@ namespace netsr2
 
             // set up all the recognition stuff
 
-            recognizer = new SpeechRecognitionEngine();
             loadSinglePhraseGrammar(phrase);
 
             recognizer.SpeechRecognized +=
@@ -82,12 +86,20 @@ namespace netsr2
 
             // start the UDP command-response server
 
-            theServer = new SpeechManager.UDPServer();
-            theServer.Init();
-
-            T = new Thread(new ThreadStart(theServer.ThreadProc));
-            T.IsBackground = true;
-            T.Start();
+            theServer.Init("127.0.0.1");
+            if (theServer.IsOK())
+            {
+                T = new Thread(new ThreadStart(theServer.ThreadProc));
+                theServer.StuffHappened += new UDPReceiveEventDelegate(server_UDPReceived);
+                //theServer.StuffHappened += new EventHandler<UDPEventArgs>(thread_StuffHappened);
+                T.IsBackground = true;
+                T.Start();
+                textBoxUI.AppendText("UDP Server initialized." + Environment.NewLine);
+            }
+            else
+            {
+                textBoxUI.AppendText("UDP Server failed to initialize." + Environment.NewLine);
+            }
 
             // set up GUI
 
@@ -237,6 +249,7 @@ namespace netsr2
             synth.SpeakAsync(phrase);
             buttonTest.Enabled = false;
             buttonSpeak.Enabled = false;
+            theServer.SendMsg("speaking");
         }
 
         void tts_SpeakStarted(object sender, SpeakStartedEventArgs e)
@@ -249,6 +262,7 @@ namespace netsr2
             buttonTest.Enabled = true;
             buttonSpeak.Enabled = true;
             textBoxUI.AppendText("TTS completed." + Environment.NewLine);
+            theServer.SendMsg(s_tts_ack);
         }
 
         private void checkBoxEditPhrase_CheckedChanged(object sender, EventArgs e)
@@ -288,7 +302,73 @@ namespace netsr2
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             theServer.Stop();
-            T.Join();
+            if (!T.Equals(null))
+            {
+                if (T.IsAlive)
+                {
+                    T.Join();
+                }
+            }
+        }
+
+        private void server_UDPReceived(UDPEventArgs e)
+        {
+            this.BeginInvoke(new Action(
+                () =>
+                {
+                    //UI thread work
+
+                    textBoxUI.AppendText(e.msg + Environment.NewLine);
+
+                    String[] sarray = e.msg.Split(' ');
+                    string firstElem = sarray.First();
+                    string restOfArray = string.Join(" ", sarray.Skip(1));
+
+                    if (firstElem == "say")
+                    {
+                        // say whatever is RX'ed
+                        if (restOfArray.Length > 0)
+                        {
+                            synth.SpeakAsync(restOfArray);
+                        }
+                        else
+                        {
+                            textBoxUI.AppendText("Empty phrase." + Environment.NewLine);
+                        }
+                    }
+                    if (firstElem == "repeat")
+                    {
+                        // repeat the loaded phrase
+                        synth.SpeakAsync(phrase);
+                    }
+                    else if (firstElem == "rec")
+                    {
+                        // recognize the loaded phrase
+                        word_ct = 0;
+                        textBoxStatus.BackColor = Color.Green;
+                        textBoxStatus.Text = "Silence";
+                        recognizer.RecognizeAsync();
+                    }
+                    else if (firstElem == "load")
+                    {
+                        if (restOfArray.Length > 0)
+                        {
+                            // load a new phrase
+                            phrase = restOfArray;
+                            textBoxPhrase.Text = phrase;
+                            recognizer.UnloadAllGrammars();
+                            loadSinglePhraseGrammar(phrase);
+                        }
+                        else
+                        {
+                            textBoxUI.AppendText("Empty phrase." + Environment.NewLine);
+                        }
+                    }
+                    else
+                    {
+                        textBoxUI.AppendText("Unrecognized command." + Environment.NewLine);
+                    }
+                }));
         }
     }
 }
