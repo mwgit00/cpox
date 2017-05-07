@@ -168,6 +168,7 @@
             this.Controls.Add(this.textBoxUI);
             this.Name = "Form1";
             this.Text = "Speech Manager";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();

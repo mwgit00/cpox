@@ -10,11 +10,16 @@ using System.Windows.Forms;
 
 using System.Speech.Recognition;
 using System.Speech.Synthesis;
+using System.Threading;
+
 
 namespace netsr2
 {
     public partial class Form1 : Form
     {
+        public SpeechManager.UDPServer theServer;
+        public Thread T;
+
         public SpeechRecognitionEngine recognizer;
         public SpeechSynthesizer synth;
         public String phrase = "this is a test";
@@ -74,6 +79,15 @@ namespace netsr2
             // hope this magically picks whatever audio input is connected
 
             recognizer.SetInputToDefaultAudioDevice();
+
+            // start the UDP command-response server
+
+            theServer = new SpeechManager.UDPServer();
+            theServer.Init();
+
+            T = new Thread(new ThreadStart(theServer.ThreadProc));
+            T.IsBackground = true;
+            T.Start();
 
             // set up GUI
 
@@ -269,6 +283,12 @@ namespace netsr2
             // into the speech recognition engine.
             Grammar g = new Grammar(gb);
             recognizer.LoadGrammar(g);
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            theServer.Stop();
+            T.Join();
         }
     }
 }
