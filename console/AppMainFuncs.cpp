@@ -32,7 +32,7 @@ void AppMain::UITestSay(void)
         // test retrieval and speaking of next phrase
         // it will be saved for manual recognition step
         s_current_phrase = phrase_mgr.next_phrase();
-        tts_events.push(FSMEvent(FSMEventCode::E_TTS_SAY, s_current_phrase));
+        udp_events.push(FSMEvent(FSMEventCode::E_UDP_SAY, s_current_phrase));
     }
 }
 
@@ -259,4 +259,11 @@ void AppMain::ActionComAck(const FSMEvent& r)
     {
         s_ack_level = S_COM_NO_ACK;
     }
+}
+
+void AppMain::ActionUDPUp(const FSMEvent& r)
+{
+    is_udp_up = r.Data() ? true : false;
+    int ids = is_udp_up ? IDS_APP_UDP_UP : IDS_APP_UDP_DOWN;
+    std::cout << util::GetString(ids) << std::endl;
 }

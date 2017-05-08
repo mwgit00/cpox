@@ -8,6 +8,11 @@
 #include "MTQueue.hpp"
 #include "TTSTask.h"
 
+#include "winsock2.h"
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Mswsock.lib")
+#pragma comment(lib, "AdvApi32.lib")
+
 
 //String haar_cascade_path = "C:\\opencv-3.2.0\\opencv\\build\\etc\\haarcascades\\";
 //String path = "~/work/cpox/";
@@ -56,13 +61,37 @@ void test_mtqueue()
 
 int main(int argc, char** argv)
 {
+    WORD wVersionRequested;
+    WSADATA wsaData;
+    int err;
+
+    // Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h
+    wVersionRequested = MAKEWORD(2, 2);
+
+    err = WSAStartup(wVersionRequested, &wsaData);
+    if (err != 0)
+    {
+        printf("WSAStartup failed with error: %d\n", err);
+        return 1;
+    }
+
+    if ((LOBYTE(wsaData.wVersion) != 2) || (HIBYTE(wsaData.wVersion) != 2))
+    {
+        printf("Could not find a usable version of Winsock.dll\n");
+        WSACleanup();
+        return 1;
+    }
+
 #if 0
     msgq.push("hello world");
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     msgq.push("");
     test_mtqueue();
 #endif
+    
     AppMain app;
     app.Go();
+
+    WSACleanup();
     return 0;
 }

@@ -10,6 +10,7 @@
 #include "util.h"
 #include "TTSTask.h"
 #include "COMTask.h"
+#include "UDPTask.h"
 #include "AppMain.h"
 
 /*
@@ -35,6 +36,7 @@ AppMain::AppMain() :
     is_grin_detect_enabled(false),
     is_tts_up(false),
     is_com_up(false),
+    is_udp_up(false),
     s_strikes(""),
     s_current_phrase(""),
     n_z(0),
@@ -80,6 +82,7 @@ AppMain::AppMain() :
     action_func_map[FSMEventCode::E_COM_LEVEL] = &AppMain::ActionComLevel;
     action_func_map[FSMEventCode::E_COM_UP] = &AppMain::ActionComUp;
     action_func_map[FSMEventCode::E_COM_ACK] = &AppMain::ActionComAck;
+    action_func_map[FSMEventCode::E_UDP_UP] = &AppMain::ActionUDPUp;
 
     // info for frame capture and recording
 
@@ -493,19 +496,26 @@ void AppMain::Go()
     if (cvx.load_cascades(cfg.app.cascade_path))
     {
         // start helper tasks
-        std::thread tts_task(tts_task_func,
-            std::ref(tts_events), std::ref(app_events));
+//        std::thread tts_task(tts_task_func,
+  //          std::ref(tts_events), std::ref(app_events));
+
         std::thread com_task(com_task_func,
             cfg.app.com_port,
             std::ref(com_events), std::ref(app_events));
 
+        std::thread udp_task(udp_task_func,
+            "127.0.0.1", 60001, 60000,
+            std::ref(udp_events), std::ref(app_events));
+
         loop();
 
         // command helper tasks to halt and wait for them to end
-        tts_events.push(FSMEvent(FSMEventCode::E_TASK_HALT));
+        //tts_events.push(FSMEvent(FSMEventCode::E_TASK_HALT));
         com_events.push(FSMEvent(FSMEventCode::E_TASK_HALT));
-        tts_task.join();
+        udp_events.push(FSMEvent(FSMEventCode::E_TASK_HALT));
+        //tts_task.join();
         com_task.join();
+        udp_task.join();
 
         std::cout << util::GetString(IDS_APP_DONE) << std::endl;
     }

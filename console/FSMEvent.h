@@ -23,16 +23,21 @@ enum class FSMEventCode : uint32_t
     E_SR_PHRASE =   0x15u,  ///< say phrase to be repeated and recognized
     E_SR_RESULT =   0x16u,  ///< speech rec. returned pass-fail result
     E_SR_RESET =    0x17u,  ///< speech rec. back to idle
-    E_TTS_SAY =     0x20u,  ///< TTS task commanded to say a phrase
-    E_TTS_IDLE =    0x21u,  ///< TTS task has finished speaking a phrase
-    E_TTS_UP =      0x22u,  ///< TTS task initialized successfully
-    E_COM_XON =     0x40u,  ///< COM external action begin
-    E_COM_XOFF =    0x41u,  ///< COM external action end
-    E_COM_UP =      0x42u,  ///< COM task initialized successfully
+    E_TTS_UP =      0x20u,  ///< TTS task initialized successfully
+    E_TTS_SAY =     0x21u,  ///< TTS task commanded to say a phrase
+    E_TTS_IDLE =    0x22u,  ///< TTS task has finished speaking a phrase
+    E_COM_UP =      0x40u,  ///< COM task initialized successfully
+    E_COM_XON =     0x41u,  ///< COM external action begin
+    E_COM_XOFF =    0x42u,  ///< COM external action end
     E_COM_ACK =     0x43u,  ///< COM task sent ack/response
     E_COM_LEVEL =   0x44u,  ///< COM external action level adjustment
     E_COM_LEVEL_1 = 0x45u,  ///< COM external action (output 1) level adjustment
     E_COM_LEVEL_2 = 0x46u,  ///< COM external action (output 2) level adjustment
+    E_UDP_UP =      0x80u,  ///< UDP task initialized successfully
+    E_UDP_SAY =     0x81u,  ///< UDP task say phrase
+    E_UDP_LOAD =    0x82u,  ///< UDP task load phrase
+    E_UDP_REPEAT =  0x83u,  ///< UDP task load phrase
+    E_UDP_REC =     0x84u,  ///< UDP task load phrase
     E_TASK_HALT =   0xF0u,  ///< tell worker task to terminate
 };
 

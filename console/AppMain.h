@@ -79,6 +79,7 @@ public:
     void ActionComLevel(const FSMEvent& r);
     void ActionComUp(const FSMEvent& r);
     void ActionComAck(const FSMEvent& r);
+    void ActionUDPUp(const FSMEvent& r);
 
 public:
 
@@ -98,6 +99,7 @@ private:
     bool is_grin_detect_enabled;
     bool is_tts_up;
     bool is_com_up;
+    bool is_udp_up;
     std::string s_strikes;
     std::string s_current_phrase;
     uint32_t n_z;
@@ -129,6 +131,7 @@ private:
     tEventQueue app_events;
     tEventQueue tts_events;
     tEventQueue com_events;
+    tEventQueue udp_events;
     
     std::map<char, AppMain::tVVFuncPtr> ui_func_map;
     std::map<FSMEventCode, AppMain::tVRevFuncPtr> action_func_map;
