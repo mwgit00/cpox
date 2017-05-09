@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 using System.Net;
 using System.Net.Sockets;
@@ -53,7 +50,7 @@ namespace SpeechManager
                 s_partner_ip = s;
                 listener = new UdpClient(listenPort);
                 groupEP = new IPEndPoint(IPAddress.Any, listenPort);
-                listener.Client.ReceiveTimeout = 100;
+                listener.Client.ReceiveTimeout = 500;
             }
             catch (SocketException)
             {

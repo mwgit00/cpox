@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.textBoxUI = new System.Windows.Forms.TextBox();
             this.audioLevelBar = new System.Windows.Forms.ProgressBar();
             this.buttonTest = new System.Windows.Forms.Button();
@@ -39,6 +40,10 @@
             this.buttonSpeak = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.checkBoxEditPhrase = new System.Windows.Forms.CheckBox();
+            this.timerEvent = new System.Windows.Forms.Timer(this.components);
+            this.labelIsSpeaking = new System.Windows.Forms.Label();
+            this.buttonAuto = new System.Windows.Forms.Button();
+            this.labelIsRecognizing = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -63,7 +68,7 @@
             // 
             // buttonTest
             // 
-            this.buttonTest.Location = new System.Drawing.Point(382, 12);
+            this.buttonTest.Location = new System.Drawing.Point(382, 49);
             this.buttonTest.Name = "buttonTest";
             this.buttonTest.Size = new System.Drawing.Size(90, 31);
             this.buttonTest.TabIndex = 5;
@@ -95,9 +100,9 @@
             // textBoxPhrase
             // 
             this.textBoxPhrase.Enabled = false;
-            this.textBoxPhrase.Location = new System.Drawing.Point(225, 87);
+            this.textBoxPhrase.Location = new System.Drawing.Point(207, 102);
             this.textBoxPhrase.Name = "textBoxPhrase";
-            this.textBoxPhrase.Size = new System.Drawing.Size(282, 22);
+            this.textBoxPhrase.Size = new System.Drawing.Size(301, 22);
             this.textBoxPhrase.TabIndex = 11;
             // 
             // textBoxStatus
@@ -122,7 +127,7 @@
             // 
             // buttonSpeak
             // 
-            this.buttonSpeak.Location = new System.Drawing.Point(285, 12);
+            this.buttonSpeak.Location = new System.Drawing.Point(382, 12);
             this.buttonSpeak.Name = "buttonSpeak";
             this.buttonSpeak.Size = new System.Drawing.Size(90, 31);
             this.buttonSpeak.TabIndex = 14;
@@ -146,7 +151,7 @@
             // checkBoxEditPhrase
             // 
             this.checkBoxEditPhrase.AutoSize = true;
-            this.checkBoxEditPhrase.Location = new System.Drawing.Point(513, 88);
+            this.checkBoxEditPhrase.Location = new System.Drawing.Point(514, 102);
             this.checkBoxEditPhrase.Name = "checkBoxEditPhrase";
             this.checkBoxEditPhrase.Size = new System.Drawing.Size(54, 21);
             this.checkBoxEditPhrase.TabIndex = 16;
@@ -154,11 +159,46 @@
             this.checkBoxEditPhrase.UseVisualStyleBackColor = true;
             this.checkBoxEditPhrase.CheckedChanged += new System.EventHandler(this.checkBoxEditPhrase_CheckedChanged);
             // 
+            // timerEvent
+            // 
+            this.timerEvent.Tick += new System.EventHandler(this.timerEvent_Tick);
+            // 
+            // labelIsSpeaking
+            // 
+            this.labelIsSpeaking.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.labelIsSpeaking.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.labelIsSpeaking.Location = new System.Drawing.Point(356, 18);
+            this.labelIsSpeaking.Name = "labelIsSpeaking";
+            this.labelIsSpeaking.Size = new System.Drawing.Size(20, 20);
+            this.labelIsSpeaking.TabIndex = 17;
+            // 
+            // buttonAuto
+            // 
+            this.buttonAuto.Location = new System.Drawing.Point(478, 49);
+            this.buttonAuto.Name = "buttonAuto";
+            this.buttonAuto.Size = new System.Drawing.Size(90, 31);
+            this.buttonAuto.TabIndex = 18;
+            this.buttonAuto.Text = "Auto";
+            this.buttonAuto.UseVisualStyleBackColor = true;
+            this.buttonAuto.Click += new System.EventHandler(this.buttonAuto_Click);
+            // 
+            // labelIsRecognizing
+            // 
+            this.labelIsRecognizing.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.labelIsRecognizing.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.labelIsRecognizing.Location = new System.Drawing.Point(356, 55);
+            this.labelIsRecognizing.Name = "labelIsRecognizing";
+            this.labelIsRecognizing.Size = new System.Drawing.Size(20, 20);
+            this.labelIsRecognizing.TabIndex = 19;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(580, 531);
+            this.Controls.Add(this.labelIsRecognizing);
+            this.Controls.Add(this.buttonAuto);
+            this.Controls.Add(this.labelIsSpeaking);
             this.Controls.Add(this.checkBoxEditPhrase);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.buttonSpeak);
@@ -190,6 +230,10 @@
         private System.Windows.Forms.Button buttonSpeak;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.CheckBox checkBoxEditPhrase;
+        private System.Windows.Forms.Timer timerEvent;
+        private System.Windows.Forms.Label labelIsSpeaking;
+        private System.Windows.Forms.Button buttonAuto;
+        private System.Windows.Forms.Label labelIsRecognizing;
     }
 }
 

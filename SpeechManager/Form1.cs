@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using System.Collections.Concurrent;
 using System.Speech.Recognition;
 using System.Speech.Synthesis;
 using System.Threading;
@@ -22,9 +23,13 @@ namespace SpeechManager
     {
         private const string s_tts_ack = "tts:0";
         private const string s_rec_ack = "rec:";
+        private ConcurrentQueue<string> xmsgq =
+            new ConcurrentQueue<string>();
 
         public SpeechManager.UDPServer theServer = new SpeechManager.UDPServer();
         public Thread T;
+
+        private bool is_auto = false;
 
         public SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
         public SpeechSynthesizer synth = new SpeechSynthesizer();
@@ -103,6 +108,12 @@ namespace SpeechManager
 
             // set up GUI
 
+            timerEvent.Interval = 100;
+            timerEvent.Start();
+
+            labelIsSpeaking.BackColor = Color.Gray;
+            labelIsRecognizing.BackColor = Color.Gray;
+            textBoxStatus.BackColor = Color.LightBlue;
             textBoxPhrase.Text = phrase;
             textBoxUI.AppendText("Ready!" + Environment.NewLine);
         }
@@ -151,7 +162,7 @@ namespace SpeechManager
             AudioState newState = e.AudioState;
             if (newState == AudioState.Silence)
             {
-                textBoxStatus.BackColor = Color.Green;
+                textBoxStatus.BackColor = Color.LightGreen;
                 textBoxStatus.Text = "Silence";
             }
             else if (newState == AudioState.Speech)
@@ -161,8 +172,8 @@ namespace SpeechManager
             }
             else if (newState == AudioState.Stopped)
             {
-                textBoxStatus.BackColor = Color.CadetBlue;
-                textBoxStatus.Text = "Stopped";
+                textBoxStatus.BackColor = Color.LightBlue;
+                textBoxStatus.Text = "Idle";
                 buttonTest.Enabled = true;
                 buttonCancel.Enabled = false;
                 buttonSpeak.Enabled = true;
@@ -193,10 +204,9 @@ namespace SpeechManager
 #endif
         }
 
-        // Handle the RecognizeCompleted event.
         void sre_RecognizeCompletedHandler(object sender, RecognizeCompletedEventArgs e)
         {
-            textBoxUI.AppendText("completed" + Environment.NewLine);
+            labelIsRecognizing.BackColor = Color.Gray;
         }
 
         void sre_SpeechHypothesized(object sender, SpeechHypothesizedEventArgs e)
@@ -206,7 +216,8 @@ namespace SpeechManager
                 for (int k = word_ct; k < e.Result.Words.Count; k++)
                 {
                     String sk = e.Result.Words[k].Text;
-                    textBoxUI.AppendText(sk + "? ");
+                    float f = e.Result.Words[k].Confidence;
+                    textBoxUI.AppendText(sk + "," + f.ToString() + "? ");
                 }
                 word_ct = e.Result.Words.Count;
             }
@@ -214,12 +225,12 @@ namespace SpeechManager
 
         private void buttonTest_Click(object sender, EventArgs e)
         {
-            textBoxUI.AppendText("Recognizing..." + Environment.NewLine);
             word_ct = 0;
             buttonTest.Enabled = false;
             buttonCancel.Enabled = true;
             buttonSpeak.Enabled = false;
-            textBoxStatus.BackColor = Color.Green;
+            labelIsRecognizing.BackColor = Color.LightGreen;
+            textBoxStatus.BackColor = Color.LightGreen;
             textBoxStatus.Text = "Silence";
             recognizer.RecognizeAsync();
         }
@@ -239,9 +250,21 @@ namespace SpeechManager
 
         private void buttonCancel_Click(object sender, EventArgs e)
         {
-            buttonCancel.Enabled = false;
-            recognizer.RecognizeAsyncCancel();
-            synth.SpeakAsyncCancelAll();
+            if (is_auto)
+            {
+                textBoxUI.AppendText("Auto mode disabled" + Environment.NewLine);
+                is_auto = false;
+                buttonSpeak.Enabled = true;
+                buttonTest.Enabled = true;
+                buttonAuto.Enabled = true;
+                buttonCancel.Enabled = false;
+            }
+            else
+            {
+                buttonCancel.Enabled = false;
+                recognizer.RecognizeAsyncCancel();
+                synth.SpeakAsyncCancelAll();
+            }
         }
 
         private void buttonSpeak_Click(object sender, EventArgs e)
@@ -254,14 +277,14 @@ namespace SpeechManager
 
         void tts_SpeakStarted(object sender, SpeakStartedEventArgs e)
         {
-            textBoxUI.AppendText("TTS started." + Environment.NewLine);
+            labelIsSpeaking.BackColor = Color.LightGreen;
         }
 
         void tts_SpeakCompleted(object sender, SpeakCompletedEventArgs e)
         {
             buttonTest.Enabled = true;
             buttonSpeak.Enabled = true;
-            textBoxUI.AppendText("TTS completed." + Environment.NewLine);
+            labelIsSpeaking.BackColor = Color.Gray;
             theServer.SendMsg(s_tts_ack);
         }
 
@@ -301,6 +324,7 @@ namespace SpeechManager
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            timerEvent.Stop();
             theServer.Stop();
             if (!T.Equals(null))
             {
@@ -313,62 +337,87 @@ namespace SpeechManager
 
         private void server_UDPReceived(UDPEventArgs e)
         {
-            this.BeginInvoke(new Action(
-                () =>
+            // using thread-safe concurrent queue
+            xmsgq.Enqueue(e.msg);
+        }
+
+        private void timerEvent_Tick(object sender, EventArgs e)
+        {
+            string s = "";
+            bool flag = false;
+
+            if (xmsgq.Count() > 0)
+            {
+                flag = xmsgq.TryDequeue(out s);
+            }
+
+            if (flag && is_auto)
+            {
+                String[] sarray = s.Split(' ');
+                string firstElem = sarray.First();
+                string restOfArray = string.Join(" ", sarray.Skip(1));
+
+                if (firstElem == "say")
                 {
-                    //UI thread work
-
-                    textBoxUI.AppendText(e.msg + Environment.NewLine);
-
-                    String[] sarray = e.msg.Split(' ');
-                    string firstElem = sarray.First();
-                    string restOfArray = string.Join(" ", sarray.Skip(1));
-
-                    if (firstElem == "say")
+                    // say whatever is RX'ed
+                    if (restOfArray.Length > 0)
                     {
-                        // say whatever is RX'ed
-                        if (restOfArray.Length > 0)
-                        {
-                            synth.SpeakAsync(restOfArray);
-                        }
-                        else
-                        {
-                            textBoxUI.AppendText("Empty phrase." + Environment.NewLine);
-                        }
-                    }
-                    if (firstElem == "repeat")
-                    {
-                        // repeat the loaded phrase
-                        synth.SpeakAsync(phrase);
-                    }
-                    else if (firstElem == "rec")
-                    {
-                        // recognize the loaded phrase
-                        word_ct = 0;
-                        textBoxStatus.BackColor = Color.Green;
-                        textBoxStatus.Text = "Silence";
-                        recognizer.RecognizeAsync();
-                    }
-                    else if (firstElem == "load")
-                    {
-                        if (restOfArray.Length > 0)
-                        {
-                            // load a new phrase
-                            phrase = restOfArray;
-                            textBoxPhrase.Text = phrase;
-                            recognizer.UnloadAllGrammars();
-                            loadSinglePhraseGrammar(phrase);
-                        }
-                        else
-                        {
-                            textBoxUI.AppendText("Empty phrase." + Environment.NewLine);
-                        }
+                        synth.SpeakAsync(restOfArray);
                     }
                     else
                     {
-                        textBoxUI.AppendText("Unrecognized command." + Environment.NewLine);
+                        textBoxUI.AppendText("Empty 'say' command." + Environment.NewLine);
                     }
-                }));
+                }
+                else if (firstElem == "cancel")
+                {
+                    recognizer.RecognizeAsyncCancel();
+                    synth.SpeakAsyncCancelAll();
+                }
+                else if (firstElem == "repeat")
+                {
+                    // repeat the loaded phrase
+                    synth.SpeakAsync(phrase);
+                }
+                else if (firstElem == "rec")
+                {
+                    // recognize the loaded phrase
+                    word_ct = 0;
+                    labelIsRecognizing.BackColor = Color.LightGreen;
+                    textBoxStatus.BackColor = Color.LightGreen;
+                    textBoxStatus.Text = "Silence";
+                    recognizer.RecognizeAsync();
+                }
+                else if (firstElem == "load")
+                {
+                    if (restOfArray.Length > 0)
+                    {
+                        // load a new phrase
+                        phrase = restOfArray;
+                        textBoxPhrase.Text = phrase;
+                        recognizer.UnloadAllGrammars();
+                        loadSinglePhraseGrammar(phrase);
+                    }
+                    else
+                    {
+                        textBoxUI.AppendText("Empty phrase." + Environment.NewLine);
+                    }
+                }
+                else
+                {
+                    textBoxUI.AppendText("Unrecognized command." + Environment.NewLine);
+                }
+            }
+        }
+
+        private void buttonAuto_Click(object sender, EventArgs e)
+        {
+            textBoxUI.AppendText("Auto mode enabled" + Environment.NewLine);
+            is_auto = true;
+            buttonSpeak.Enabled = false;
+            buttonTest.Enabled = false;
+            buttonAuto.Enabled = false;
+            buttonCancel.Enabled = true;
         }
     }
 }

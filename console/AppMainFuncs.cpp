@@ -32,6 +32,7 @@ void AppMain::UITestSay(void)
         // test retrieval and speaking of next phrase
         // it will be saved for manual recognition step
         s_current_phrase = phrase_mgr.next_phrase();
+        std::cout << s_current_phrase << std::endl;
         udp_events.push(FSMEvent(FSMEventCode::E_UDP_SAY, s_current_phrase));
     }
 }
