@@ -100,7 +100,7 @@
             // textBoxPhrase
             // 
             this.textBoxPhrase.Enabled = false;
-            this.textBoxPhrase.Location = new System.Drawing.Point(207, 102);
+            this.textBoxPhrase.Location = new System.Drawing.Point(207, 87);
             this.textBoxPhrase.Name = "textBoxPhrase";
             this.textBoxPhrase.Size = new System.Drawing.Size(301, 22);
             this.textBoxPhrase.TabIndex = 11;
@@ -121,7 +121,7 @@
             this.buttonCancel.Name = "buttonCancel";
             this.buttonCancel.Size = new System.Drawing.Size(90, 31);
             this.buttonCancel.TabIndex = 13;
-            this.buttonCancel.Text = "Cancel";
+            this.buttonCancel.Text = "Stop";
             this.buttonCancel.UseVisualStyleBackColor = true;
             this.buttonCancel.Click += new System.EventHandler(this.buttonCancel_Click);
             // 
@@ -151,7 +151,7 @@
             // checkBoxEditPhrase
             // 
             this.checkBoxEditPhrase.AutoSize = true;
-            this.checkBoxEditPhrase.Location = new System.Drawing.Point(514, 102);
+            this.checkBoxEditPhrase.Location = new System.Drawing.Point(514, 89);
             this.checkBoxEditPhrase.Name = "checkBoxEditPhrase";
             this.checkBoxEditPhrase.Size = new System.Drawing.Size(54, 21);
             this.checkBoxEditPhrase.TabIndex = 16;

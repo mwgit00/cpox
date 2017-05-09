@@ -30,6 +30,7 @@ namespace SpeechManager
         public Thread T;
 
         private bool is_auto = false;
+        private bool is_last_cmd_done = true;
 
         public SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
         public SpeechSynthesizer synth = new SpeechSynthesizer();
@@ -125,7 +126,7 @@ namespace SpeechManager
                 textBoxUI.AppendText(Environment.NewLine);
             }
 
-            textBoxUI.AppendText(e.Result.Text + Environment.NewLine);
+            textBoxUI.AppendText("YAY! " + e.Result.Text + Environment.NewLine);
         }
 
         void sre_AudioSignalProblemOccurred(object sender, AudioSignalProblemOccurredEventArgs e)
@@ -174,9 +175,6 @@ namespace SpeechManager
             {
                 textBoxStatus.BackColor = Color.LightBlue;
                 textBoxStatus.Text = "Idle";
-                buttonTest.Enabled = true;
-                buttonCancel.Enabled = false;
-                buttonSpeak.Enabled = true;
                 audioLevelBar.Value = 0;
             }
         }
@@ -207,6 +205,13 @@ namespace SpeechManager
         void sre_RecognizeCompletedHandler(object sender, RecognizeCompletedEventArgs e)
         {
             labelIsRecognizing.BackColor = Color.Gray;
+            is_last_cmd_done = true;
+            if (!is_auto)
+            {
+                buttonTest.Enabled = true;
+                buttonCancel.Enabled = false;
+                buttonSpeak.Enabled = true;
+            }
         }
 
         void sre_SpeechHypothesized(object sender, SpeechHypothesizedEventArgs e)
@@ -282,10 +287,14 @@ namespace SpeechManager
 
         void tts_SpeakCompleted(object sender, SpeakCompletedEventArgs e)
         {
-            buttonTest.Enabled = true;
-            buttonSpeak.Enabled = true;
+            if (!is_auto)
+            {
+                buttonTest.Enabled = true;
+                buttonSpeak.Enabled = true;
+            }
             labelIsSpeaking.BackColor = Color.Gray;
             theServer.SendMsg(s_tts_ack);
+            is_last_cmd_done = true;
         }
 
         private void checkBoxEditPhrase_CheckedChanged(object sender, EventArgs e)
@@ -338,20 +347,44 @@ namespace SpeechManager
         private void server_UDPReceived(UDPEventArgs e)
         {
             // using thread-safe concurrent queue
+            // no invoke is necessary
+
+            if (e.msg == "cancel")
+            {
+                // do a dummy loop to drain the queue
+                // then a single cancel command will be queued
+                string smsg;
+                while (xmsgq.TryDequeue(out smsg))
+                {
+                    // do nothing
+                }
+            }
+
             xmsgq.Enqueue(e.msg);
         }
 
         private void timerEvent_Tick(object sender, EventArgs e)
         {
             string s = "";
-            bool flag = false;
+            bool cmdFlag = false;
+            bool is_cancel = false;
 
-            if (xmsgq.Count() > 0)
+            // peek to see if there is a cancel command
+            if (xmsgq.TryPeek(out s))
             {
-                flag = xmsgq.TryDequeue(out s);
+                is_cancel = (s == "cancel");
             }
 
-            if (flag && is_auto)
+            // can try to pop a command if last command is done
+            // or if a cancel is the next command
+            // a cancel can always be handled
+            if (is_last_cmd_done || is_cancel)
+            {
+                cmdFlag = xmsgq.TryDequeue(out s);
+            }
+
+            // if cmd and auto mode then execute
+            if (cmdFlag && is_auto)
             {
                 String[] sarray = s.Split(' ');
                 string firstElem = sarray.First();
@@ -359,9 +392,11 @@ namespace SpeechManager
 
                 if (firstElem == "say")
                 {
-                    // say whatever is RX'ed
                     if (restOfArray.Length > 0)
                     {
+                        // say whatever is RX'ed
+                        // clear done flag, TTS done event will set it
+                        is_last_cmd_done = false;
                         synth.SpeakAsync(restOfArray);
                     }
                     else
@@ -377,11 +412,15 @@ namespace SpeechManager
                 else if (firstElem == "repeat")
                 {
                     // repeat the loaded phrase
+                    // clear done flag, TTS done event will set it
+                    is_last_cmd_done = false;
                     synth.SpeakAsync(phrase);
                 }
                 else if (firstElem == "rec")
                 {
                     // recognize the loaded phrase
+                    // clear done flag, rec done event will set it
+                    is_last_cmd_done = false;
                     word_ct = 0;
                     labelIsRecognizing.BackColor = Color.LightGreen;
                     textBoxStatus.BackColor = Color.LightGreen;
@@ -393,6 +432,7 @@ namespace SpeechManager
                     if (restOfArray.Length > 0)
                     {
                         // load a new phrase
+                        // immediate, no need to clear done flag
                         phrase = restOfArray;
                         textBoxPhrase.Text = phrase;
                         recognizer.UnloadAllGrammars();
