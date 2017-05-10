@@ -21,16 +21,22 @@ namespace SpeechManager
 
     public partial class Form1 : Form
     {
+        private const int REC_TIME_SEC = 20;
+        private const int INTERVAL_MS = 100;
+        private const int COUNTDOWN_MS = REC_TIME_SEC * 1000;
         private const string s_tts_ack = "tts:0";
         private const string s_rec_ack = "rec:";
+
         private ConcurrentQueue<string> xmsgq =
             new ConcurrentQueue<string>();
 
-        public SpeechManager.UDPServer theServer = new SpeechManager.UDPServer();
-        public Thread T;
+        private SpeechManager.UDPServer theServer = new SpeechManager.UDPServer();
+        private Thread T;
 
         private bool is_auto = false;
         private bool is_last_cmd_done = true;
+        private bool is_rec_tmr_running = false;
+        private int t_ct;
 
         public SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
         public SpeechSynthesizer synth = new SpeechSynthesizer();
@@ -92,12 +98,11 @@ namespace SpeechManager
 
             // start the UDP command-response server
 
-            theServer.Init("127.0.0.1");
+            theServer.Init();
             if (theServer.IsOK())
             {
                 T = new Thread(new ThreadStart(theServer.ThreadProc));
-                theServer.StuffHappened += new UDPReceiveEventDelegate(server_UDPReceived);
-                //theServer.StuffHappened += new EventHandler<UDPEventArgs>(thread_StuffHappened);
+                theServer.UDPReceiveHappened += new UDPReceiveEventDelegate(server_UDPReceived);
                 T.IsBackground = true;
                 T.Start();
                 textBoxUI.AppendText("UDP Server initialized." + Environment.NewLine);
@@ -109,7 +114,7 @@ namespace SpeechManager
 
             // set up GUI
 
-            timerEvent.Interval = 100;
+            timerEvent.Interval = INTERVAL_MS;
             timerEvent.Start();
 
             labelIsSpeaking.BackColor = Color.Gray;
@@ -182,7 +187,7 @@ namespace SpeechManager
         void sre_SpeechRecognitionRejectedHandler(
           object sender, SpeechRecognitionRejectedEventArgs e)
         {
-            textBoxUI.AppendText("rejected" + Environment.NewLine);
+            textBoxUI.AppendText("Rejected" + Environment.NewLine);
 #if FALSE
             Console.WriteLine(" In SpeechRecognitionRejectedHandler:");
 
@@ -206,11 +211,14 @@ namespace SpeechManager
         {
             labelIsRecognizing.BackColor = Color.Gray;
             is_last_cmd_done = true;
+            is_rec_tmr_running = false;
+            textBoxRecTimer.Text = "0";
             if (!is_auto)
             {
-                buttonTest.Enabled = true;
+                buttonRecognize.Enabled = true;
                 buttonCancel.Enabled = false;
                 buttonSpeak.Enabled = true;
+                buttonAuto.Enabled = true;
             }
         }
 
@@ -228,29 +236,25 @@ namespace SpeechManager
             }
         }
 
-        private void buttonTest_Click(object sender, EventArgs e)
+        private void buttonRecognize_Click(object sender, EventArgs e)
         {
-            word_ct = 0;
-            buttonTest.Enabled = false;
+            // change state of related buttons
+            // recognize the loaded phrase
+            buttonRecognize.Enabled = false;
             buttonCancel.Enabled = true;
             buttonSpeak.Enabled = false;
-            labelIsRecognizing.BackColor = Color.LightGreen;
-            textBoxStatus.BackColor = Color.LightGreen;
-            textBoxStatus.Text = "Silence";
-            recognizer.RecognizeAsync();
+            buttonAuto.Enabled = false;
+            start_recognition();
         }
 
         private void checkBoxShowAudioProblems_CheckedChanged(object sender, EventArgs e)
         {
-            //String s = checkBoxShowAudioProblems.Checked.ToString();
-            //textBoxUI.AppendText("Show Audio Problems: " + s + Environment.NewLine);
+            // placeholder
         }
 
         private void sre_SpeechDetected(object sender, SpeechDetectedEventArgs e)
         {
-#if FALSE
-            Console.WriteLine("  Speech detected at AudioPosition = {0}", e.AudioPosition);
-#endif
+            // placeholder
         }
 
         private void buttonCancel_Click(object sender, EventArgs e)
@@ -260,24 +264,26 @@ namespace SpeechManager
                 textBoxUI.AppendText("Auto mode disabled" + Environment.NewLine);
                 is_auto = false;
                 buttonSpeak.Enabled = true;
-                buttonTest.Enabled = true;
+                buttonRecognize.Enabled = true;
                 buttonAuto.Enabled = true;
                 buttonCancel.Enabled = false;
             }
             else
             {
                 buttonCancel.Enabled = false;
-                recognizer.RecognizeAsyncCancel();
-                synth.SpeakAsyncCancelAll();
+                cancel_speech_actions();
             }
         }
 
         private void buttonSpeak_Click(object sender, EventArgs e)
         {
-            synth.SpeakAsync(phrase);
-            buttonTest.Enabled = false;
-            buttonSpeak.Enabled = false;
-            theServer.SendMsg("speaking");
+            if (!is_auto)
+            {
+                buttonRecognize.Enabled = false;
+                buttonSpeak.Enabled = false;
+                buttonAuto.Enabled = false;
+            }
+            start_speaking(phrase);
         }
 
         void tts_SpeakStarted(object sender, SpeakStartedEventArgs e)
@@ -289,8 +295,9 @@ namespace SpeechManager
         {
             if (!is_auto)
             {
-                buttonTest.Enabled = true;
+                buttonRecognize.Enabled = true;
                 buttonSpeak.Enabled = true;
+                buttonAuto.Enabled = true;
             }
             labelIsSpeaking.BackColor = Color.Gray;
             theServer.SendMsg(s_tts_ack);
@@ -302,7 +309,7 @@ namespace SpeechManager
             textBoxPhrase.Enabled = checkBoxEditPhrase.Checked;
             if (checkBoxEditPhrase.Checked == false)
             {
-                // turning off editing of phrase
+                // turning off editing of phrase (unclicking checkbox)
                 // will apply it as new grammar
 
                 recognizer.UnloadAllGrammars();
@@ -333,6 +340,8 @@ namespace SpeechManager
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            // stop any timer events
+            // then assert server stop flag and wait for it to end
             timerEvent.Stop();
             theServer.Stop();
             if (!T.Equals(null))
@@ -347,12 +356,12 @@ namespace SpeechManager
         private void server_UDPReceived(UDPEventArgs e)
         {
             // using thread-safe concurrent queue
-            // no invoke is necessary
+            // so no invoke is necessary
 
             if (e.msg == "cancel")
             {
                 // do a dummy loop to drain the queue
-                // then a single cancel command will be queued
+                // prior to queueing the cancel command below
                 string smsg;
                 while (xmsgq.TryDequeue(out smsg))
                 {
@@ -360,6 +369,7 @@ namespace SpeechManager
                 }
             }
 
+            // queue the command
             xmsgq.Enqueue(e.msg);
         }
 
@@ -368,6 +378,21 @@ namespace SpeechManager
             string s = "";
             bool cmdFlag = false;
             bool is_cancel = false;
+
+            // handle recognition timeout
+            if (is_rec_tmr_running)
+            {
+                t_ct += INTERVAL_MS;
+                int x = t_ct / 1000;
+                int t_left = REC_TIME_SEC - x;
+                textBoxRecTimer.Text = t_left.ToString();
+                if (t_left == 0)
+                {
+                    is_rec_tmr_running = false;
+                    textBoxUI.AppendText("Recognition timeout" + Environment.NewLine);
+                    cancel_speech_actions();
+                }
+            }
 
             // peek to see if there is a cancel command
             if (xmsgq.TryPeek(out s))
@@ -395,9 +420,7 @@ namespace SpeechManager
                     if (restOfArray.Length > 0)
                     {
                         // say whatever is RX'ed
-                        // clear done flag, TTS done event will set it
-                        is_last_cmd_done = false;
-                        synth.SpeakAsync(restOfArray);
+                        start_speaking(restOfArray);
                     }
                     else
                     {
@@ -406,33 +429,24 @@ namespace SpeechManager
                 }
                 else if (firstElem == "cancel")
                 {
-                    recognizer.RecognizeAsyncCancel();
-                    synth.SpeakAsyncCancelAll();
+                    cancel_speech_actions();
                 }
                 else if (firstElem == "repeat")
                 {
                     // repeat the loaded phrase
-                    // clear done flag, TTS done event will set it
-                    is_last_cmd_done = false;
-                    synth.SpeakAsync(phrase);
+                    start_speaking(phrase);
                 }
                 else if (firstElem == "rec")
                 {
                     // recognize the loaded phrase
-                    // clear done flag, rec done event will set it
-                    is_last_cmd_done = false;
-                    word_ct = 0;
-                    labelIsRecognizing.BackColor = Color.LightGreen;
-                    textBoxStatus.BackColor = Color.LightGreen;
-                    textBoxStatus.Text = "Silence";
-                    recognizer.RecognizeAsync();
+                    start_recognition();
                 }
                 else if (firstElem == "load")
                 {
                     if (restOfArray.Length > 0)
                     {
                         // load a new phrase
-                        // immediate, no need to clear done flag
+                        // immediate operation, no need to clear done flag
                         phrase = restOfArray;
                         textBoxPhrase.Text = phrase;
                         recognizer.UnloadAllGrammars();
@@ -455,9 +469,42 @@ namespace SpeechManager
             textBoxUI.AppendText("Auto mode enabled" + Environment.NewLine);
             is_auto = true;
             buttonSpeak.Enabled = false;
-            buttonTest.Enabled = false;
+            buttonRecognize.Enabled = false;
             buttonAuto.Enabled = false;
             buttonCancel.Enabled = true;
+        }
+
+        private void buttonClear_Click(object sender, EventArgs e)
+        {
+            textBoxUI.Text = "";
+        }
+
+        public void start_recognition()
+        {
+            // clear done flag, rec done event will set it
+            is_last_cmd_done = false;
+            is_rec_tmr_running = true;
+            word_ct = 0;
+            t_ct = 0;
+            textBoxRecTimer.Text = REC_TIME_SEC.ToString();
+            textBoxStatus.BackColor = Color.LightGreen;
+            textBoxStatus.Text = "Silence";
+            labelIsRecognizing.BackColor = Color.LightGreen;
+            recognizer.RecognizeAsync();
+        }
+
+        public void start_speaking(string s)
+        {
+            // clear done flag, TTS done event will set it
+            is_last_cmd_done = false;
+            synth.SpeakAsync(s);
+            theServer.SendMsg("speaking");
+        }
+
+        public void cancel_speech_actions()
+        {
+            recognizer.RecognizeAsyncCancel();
+            synth.SpeakAsyncCancelAll();
         }
     }
 }

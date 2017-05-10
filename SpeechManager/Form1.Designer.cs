@@ -31,7 +31,7 @@
             this.components = new System.ComponentModel.Container();
             this.textBoxUI = new System.Windows.Forms.TextBox();
             this.audioLevelBar = new System.Windows.Forms.ProgressBar();
-            this.buttonTest = new System.Windows.Forms.Button();
+            this.buttonRecognize = new System.Windows.Forms.Button();
             this.checkBoxShowAudioProblems = new System.Windows.Forms.CheckBox();
             this.checkBoxShowHypothesis = new System.Windows.Forms.CheckBox();
             this.textBoxPhrase = new System.Windows.Forms.TextBox();
@@ -44,6 +44,8 @@
             this.labelIsSpeaking = new System.Windows.Forms.Label();
             this.buttonAuto = new System.Windows.Forms.Button();
             this.labelIsRecognizing = new System.Windows.Forms.Label();
+            this.buttonClear = new System.Windows.Forms.Button();
+            this.textBoxRecTimer = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -55,7 +57,7 @@
             this.textBoxUI.Name = "textBoxUI";
             this.textBoxUI.ReadOnly = true;
             this.textBoxUI.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBoxUI.Size = new System.Drawing.Size(555, 389);
+            this.textBoxUI.Size = new System.Drawing.Size(555, 352);
             this.textBoxUI.TabIndex = 0;
             // 
             // audioLevelBar
@@ -66,15 +68,15 @@
             this.audioLevelBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.audioLevelBar.TabIndex = 1;
             // 
-            // buttonTest
+            // buttonRecognize
             // 
-            this.buttonTest.Location = new System.Drawing.Point(382, 49);
-            this.buttonTest.Name = "buttonTest";
-            this.buttonTest.Size = new System.Drawing.Size(90, 31);
-            this.buttonTest.TabIndex = 5;
-            this.buttonTest.Text = "Recognize";
-            this.buttonTest.UseVisualStyleBackColor = true;
-            this.buttonTest.Click += new System.EventHandler(this.buttonTest_Click);
+            this.buttonRecognize.Location = new System.Drawing.Point(382, 49);
+            this.buttonRecognize.Name = "buttonRecognize";
+            this.buttonRecognize.Size = new System.Drawing.Size(90, 31);
+            this.buttonRecognize.TabIndex = 5;
+            this.buttonRecognize.Text = "Recognize";
+            this.buttonRecognize.UseVisualStyleBackColor = true;
+            this.buttonRecognize.Click += new System.EventHandler(this.buttonRecognize_Click);
             // 
             // checkBoxShowAudioProblems
             // 
@@ -169,7 +171,7 @@
             this.labelIsSpeaking.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.labelIsSpeaking.Location = new System.Drawing.Point(356, 18);
             this.labelIsSpeaking.Name = "labelIsSpeaking";
-            this.labelIsSpeaking.Size = new System.Drawing.Size(20, 20);
+            this.labelIsSpeaking.Size = new System.Drawing.Size(20, 22);
             this.labelIsSpeaking.TabIndex = 17;
             // 
             // buttonAuto
@@ -186,16 +188,38 @@
             // 
             this.labelIsRecognizing.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
             this.labelIsRecognizing.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.labelIsRecognizing.Location = new System.Drawing.Point(356, 55);
+            this.labelIsRecognizing.Location = new System.Drawing.Point(356, 53);
             this.labelIsRecognizing.Name = "labelIsRecognizing";
-            this.labelIsRecognizing.Size = new System.Drawing.Size(20, 20);
+            this.labelIsRecognizing.Size = new System.Drawing.Size(20, 22);
             this.labelIsRecognizing.TabIndex = 19;
+            // 
+            // buttonClear
+            // 
+            this.buttonClear.Location = new System.Drawing.Point(478, 488);
+            this.buttonClear.Name = "buttonClear";
+            this.buttonClear.Size = new System.Drawing.Size(90, 31);
+            this.buttonClear.TabIndex = 20;
+            this.buttonClear.Text = "Clear";
+            this.buttonClear.UseVisualStyleBackColor = true;
+            this.buttonClear.Click += new System.EventHandler(this.buttonClear_Click);
+            // 
+            // textBoxRecTimer
+            // 
+            this.textBoxRecTimer.Location = new System.Drawing.Point(306, 53);
+            this.textBoxRecTimer.Name = "textBoxRecTimer";
+            this.textBoxRecTimer.ReadOnly = true;
+            this.textBoxRecTimer.Size = new System.Drawing.Size(44, 22);
+            this.textBoxRecTimer.TabIndex = 21;
+            this.textBoxRecTimer.Text = "0";
+            this.textBoxRecTimer.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(580, 531);
+            this.Controls.Add(this.textBoxRecTimer);
+            this.Controls.Add(this.buttonClear);
             this.Controls.Add(this.labelIsRecognizing);
             this.Controls.Add(this.buttonAuto);
             this.Controls.Add(this.labelIsSpeaking);
@@ -204,10 +228,10 @@
             this.Controls.Add(this.buttonSpeak);
             this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.textBoxPhrase);
-            this.Controls.Add(this.buttonTest);
+            this.Controls.Add(this.buttonRecognize);
             this.Controls.Add(this.textBoxUI);
             this.Name = "Form1";
-            this.Text = "Speech Manager";
+            this.Text = "Speech Manager 1.0";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
@@ -221,7 +245,7 @@
 
         private System.Windows.Forms.TextBox textBoxUI;
         private System.Windows.Forms.ProgressBar audioLevelBar;
-        private System.Windows.Forms.Button buttonTest;
+        private System.Windows.Forms.Button buttonRecognize;
         private System.Windows.Forms.CheckBox checkBoxShowAudioProblems;
         private System.Windows.Forms.CheckBox checkBoxShowHypothesis;
         private System.Windows.Forms.TextBox textBoxPhrase;
@@ -234,6 +258,8 @@
         private System.Windows.Forms.Label labelIsSpeaking;
         private System.Windows.Forms.Button buttonAuto;
         private System.Windows.Forms.Label labelIsRecognizing;
+        private System.Windows.Forms.Button buttonClear;
+        private System.Windows.Forms.TextBox textBoxRecTimer;
     }
 }
 

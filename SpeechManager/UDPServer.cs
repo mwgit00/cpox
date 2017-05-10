@@ -20,7 +20,7 @@ namespace SpeechManager
 
     public class UDPServer
     {
-        public event UDPReceiveEventDelegate StuffHappened;
+        public event UDPReceiveEventDelegate UDPReceiveHappened;
 
         private volatile bool is_stop_requested = false;
         private volatile bool is_socket_error = false;
@@ -37,17 +37,16 @@ namespace SpeechManager
 
         protected virtual void OnUDPReceive(UDPEventArgs e)
         {
-            if (StuffHappened != null)
+            if (UDPReceiveHappened != null)
             {
-                StuffHappened(e);
+                UDPReceiveHappened(e);
             }
         }
 
-        public void Init(string s)
+        public void Init()
         {
             try
             {
-                s_partner_ip = s;
                 listener = new UdpClient(listenPort);
                 groupEP = new IPEndPoint(IPAddress.Any, listenPort);
                 listener.Client.ReceiveTimeout = 500;
@@ -88,6 +87,7 @@ namespace SpeechManager
                     if (buffer.Length > 0)
                     {
                         string s = System.Text.Encoding.UTF8.GetString(buffer, 0, buffer.Length);
+                        s_partner_ip = groupEP.Address.ToString();
                         OnUDPReceive(new UDPEventArgs(s));
                     }
                 }
@@ -98,6 +98,10 @@ namespace SpeechManager
                         is_socket_error = true;
                     }
                 }
+
+                // receive operation above has finished
+                // if a new response is ready then send it
+                // to IP address of last sender
 
                 if (!is_socket_error)
                 {
