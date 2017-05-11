@@ -78,7 +78,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
             {
                 // announce start of speech mode
                 _to_wait();
-                rq.push(FSMEvent(FSMEventCode::E_TTS_SAY,
+                rq.push(FSMEvent(FSMEventCode::E_UDP_SAY,
                     "listen and repeat"));
             }
         }
@@ -98,10 +98,10 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
         if (this_event.Code() == FSMEventCode::E_TMR_SR)
         {
             // was speaking but timed out
-            // likely due to TTS process not started
+            // likely due to Speech Manager not started
             _to_wait();
         }
-        else if (this_event.Code() == FSMEventCode::E_TTS_IDLE)
+        else if (this_event.Code() == FSMEventCode::E_UDP_TTS_OK)
         {
             // begin recognition
             sr_timer.start(rCfg.rec_time);
@@ -117,7 +117,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
             // likely due to REC process not started (or hung)
             _to_wait();
         }
-        else if (this_event.Code() == FSMEventCode::E_SR_RESULT)
+        else if (this_event.Code() == FSMEventCode::E_UDP_REC_VAL)
         {
             // got a result so update strike count
             // then ack result with the number of strikes

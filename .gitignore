@@ -34,5 +34,7 @@
 # Visual Studio
 .vs/
 x64/
+Release/
+Debug/
 *.db
 *.opendb

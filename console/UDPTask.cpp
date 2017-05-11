@@ -103,7 +103,19 @@ void udp_task_func(
         }
         else if (recv_len > 0)
         {
-            // @TODO -- pass responses back to app
+            std::string s(buf, recv_len);
+            if (s == "tts 1")
+            {
+                rqtx.push(FSMEvent(FSMEventCode::E_UDP_TTS_OK));
+            }
+            else if (s == "rec 0")
+            {
+                rqtx.push(FSMEvent(FSMEventCode::E_UDP_REC_VAL, 0));
+            }
+            else if (s == "rec 1")
+            {
+                rqtx.push(FSMEvent(FSMEventCode::E_UDP_REC_VAL, 1));
+            }
         }
 
         while (rqrx.size() && result)

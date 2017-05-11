@@ -24,8 +24,8 @@ namespace SpeechManager
         private const int REC_TIME_SEC = 20;
         private const int INTERVAL_MS = 100;
         private const int COUNTDOWN_MS = REC_TIME_SEC * 1000;
-        private const string s_tts_ack = "tts:0";
-        private const string s_rec_ack = "rec:";
+        private const string s_tts_ack = "tts 1";
+        private const string s_rec_ack = "rec ";
 
         private ConcurrentQueue<string> xmsgq =
             new ConcurrentQueue<string>();
@@ -41,7 +41,9 @@ namespace SpeechManager
         public SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
         public SpeechSynthesizer synth = new SpeechSynthesizer();
         public String phrase = "this is a test";
-        public int word_ct = 0;
+        private int word_ct = 0;
+        private double rec_conf = 0.0;
+        private bool is_rec_valid = false;
 
         public Form1()
         {
@@ -131,7 +133,8 @@ namespace SpeechManager
                 textBoxUI.AppendText(Environment.NewLine);
             }
 
-            textBoxUI.AppendText("YAY! " + e.Result.Text + Environment.NewLine);
+            is_rec_valid = true;
+            rec_conf = e.Result.Confidence;
         }
 
         void sre_AudioSignalProblemOccurred(object sender, AudioSignalProblemOccurredEventArgs e)
@@ -187,24 +190,8 @@ namespace SpeechManager
         void sre_SpeechRecognitionRejectedHandler(
           object sender, SpeechRecognitionRejectedEventArgs e)
         {
-            textBoxUI.AppendText("Rejected" + Environment.NewLine);
-#if FALSE
-            Console.WriteLine(" In SpeechRecognitionRejectedHandler:");
-
-            string grammarName = "<not available>";
-            string resultText = "<not available>";
-            if (e.Result != null)
-            {
-                if (e.Result.Grammar != null)
-                {
-                    grammarName = e.Result.Grammar.Name;
-                }
-                resultText = e.Result.Text;
-            }
-
-            Console.WriteLine(" - Grammar Name = {0}; Result Text = {1}",
-              grammarName, resultText);
-#endif
+            is_rec_valid = true;
+            rec_conf = 0.0;
         }
 
         void sre_RecognizeCompletedHandler(object sender, RecognizeCompletedEventArgs e)
@@ -219,6 +206,21 @@ namespace SpeechManager
                 buttonCancel.Enabled = false;
                 buttonSpeak.Enabled = true;
                 buttonAuto.Enabled = true;
+            }
+
+            if (is_rec_valid)
+            {
+                double thr = (double)numericUpDownMinScore.Value;
+                string sconf = rec_conf.ToString("0.000");
+                string sresult = "PASS: ";
+                string sval = "1";
+                if (rec_conf < (thr / 100.0))
+                {
+                    sresult = "FAIL: ";
+                    sval = "0";
+                }
+                textBoxUI.AppendText(sresult + sconf + Environment.NewLine);
+                theServer.SendMsg(s_rec_ack + sval);
             }
         }
 
@@ -484,6 +486,7 @@ namespace SpeechManager
             // clear done flag, rec done event will set it
             is_last_cmd_done = false;
             is_rec_tmr_running = true;
+            is_rec_valid = false;
             word_ct = 0;
             t_ct = 0;
             textBoxRecTimer.Text = REC_TIME_SEC.ToString();
@@ -498,7 +501,6 @@ namespace SpeechManager
             // clear done flag, TTS done event will set it
             is_last_cmd_done = false;
             synth.SpeakAsync(s);
-            theServer.SendMsg("speaking");
         }
 
         public void cancel_speech_actions()

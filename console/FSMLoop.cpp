@@ -119,7 +119,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
                 // announce halt
                 rq.push(FSMEvent(FSMEventCode::E_SR_STOP));
                 rq.push(FSMEvent(FSMEventCode::E_COM_XOFF));
-                rq.push(FSMEvent(FSMEventCode::E_TTS_SAY, "session halted"));
+                rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "session halted"));
                 
                 ///////
                 return;
@@ -137,7 +137,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
                 cv_timer.start(rCfg.inh_time);
                 state = STATE_INH;
                 // announce countdown has started
-                rq.push(FSMEvent(FSMEventCode::E_TTS_SAY, "get ready"));
+                rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "get ready"));
             }
         }
     }
@@ -149,7 +149,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
             // reset speech rec. SM so it can be started again
             // announce start of monitoring
             rq.push(FSMEvent(FSMEventCode::E_SR_RESET));
-            rq.push(FSMEvent(FSMEventCode::E_TTS_SAY, "go"));
+            rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "go"));
         }
     }
     else if (state == STATE_NORM)

@@ -30,10 +30,10 @@ void AppMain::UITestSay(void)
     if (cvsm.is_idle())
     {
         // test retrieval and speaking of next phrase
-        // it will be saved for manual recognition step
+        // it will be loaded into Speech Manager
         s_current_phrase = phrase_mgr.next_phrase();
-        std::cout << s_current_phrase << std::endl;
-        udp_events.push(FSMEvent(FSMEventCode::E_UDP_SAY, s_current_phrase));
+        udp_events.push(FSMEvent(FSMEventCode::E_UDP_LOAD, s_current_phrase));
+        udp_events.push(FSMEvent(FSMEventCode::E_UDP_REPEAT));
     }
 }
 
@@ -41,8 +41,8 @@ void AppMain::UITestSpeechRec(void)
 {
     if (cvsm.is_idle())
     {
-        //std::cout << "REC Test:", phrase
-        //  thread_rec.post_cmd('hear', phrase)
+        // test recognition of last loaded phrase
+        udp_events.push(FSMEvent(FSMEventCode::E_UDP_REC));
     }
 }
 
@@ -174,32 +174,20 @@ void AppMain::UITest4(void)
 }
 
 
-void AppMain::ActionTTSUp(const FSMEvent& r)
-{
-    is_tts_up = r.Data() ? true : false;
-    int ids = is_tts_up ? IDS_APP_TTS_UP : IDS_APP_TTS_DOWN;
-    std::cout << util::GetString(ids) << std::endl;
-}
-
-void AppMain::ActionTTSSay(const FSMEvent& r)
-{
-    // pass event to TTS task
-    tts_events.push(r);
-}
-
 void AppMain::ActionSRPhrase(const FSMEvent& r)
 {
     // retrieve next phrase to be repeated
-    // and issue command to say it
+    // and issue commands to load it and repeat it
     // phrase is stashed for upcoming recognition step...
     s_current_phrase = phrase_mgr.next_phrase();
-    tts_events.push(FSMEvent(FSMEventCode::E_TTS_SAY, s_current_phrase));
+    udp_events.push(FSMEvent(FSMEventCode::E_UDP_LOAD, s_current_phrase));
+    udp_events.push(FSMEvent(FSMEventCode::E_UDP_REPEAT));
 }
 
 void AppMain::ActionSRRec(const FSMEvent& r)
 {
     // issue command to recognize a phrase
-    // thread_rec.post_cmd('hear', phrase);
+    udp_events.push(FSMEvent(FSMEventCode::E_UDP_REC));
 }
 
 void AppMain::ActionSRStrikes(const FSMEvent& r)
@@ -267,4 +255,10 @@ void AppMain::ActionUDPUp(const FSMEvent& r)
     is_udp_up = r.Data() ? true : false;
     int ids = is_udp_up ? IDS_APP_UDP_UP : IDS_APP_UDP_DOWN;
     std::cout << util::GetString(ids) << std::endl;
+}
+
+void AppMain::ActionUDPSay(const FSMEvent& r)
+{
+    // pass event to UDP task
+    udp_events.push(r);
 }

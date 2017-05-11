@@ -39,6 +39,8 @@
             this.buttonCancel = new System.Windows.Forms.Button();
             this.buttonSpeak = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.numericUpDownMinScore = new System.Windows.Forms.NumericUpDown();
             this.checkBoxEditPhrase = new System.Windows.Forms.CheckBox();
             this.timerEvent = new System.Windows.Forms.Timer(this.components);
             this.labelIsSpeaking = new System.Windows.Forms.Label();
@@ -47,17 +49,19 @@
             this.buttonClear = new System.Windows.Forms.Button();
             this.textBoxRecTimer = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownMinScore)).BeginInit();
             this.SuspendLayout();
             // 
             // textBoxUI
             // 
             this.textBoxUI.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
-            this.textBoxUI.Location = new System.Drawing.Point(12, 130);
+            this.textBoxUI.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBoxUI.Location = new System.Drawing.Point(12, 181);
             this.textBoxUI.Multiline = true;
             this.textBoxUI.Name = "textBoxUI";
             this.textBoxUI.ReadOnly = true;
             this.textBoxUI.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBoxUI.Size = new System.Drawing.Size(555, 352);
+            this.textBoxUI.Size = new System.Drawing.Size(555, 338);
             this.textBoxUI.TabIndex = 0;
             // 
             // audioLevelBar
@@ -102,9 +106,9 @@
             // textBoxPhrase
             // 
             this.textBoxPhrase.Enabled = false;
-            this.textBoxPhrase.Location = new System.Drawing.Point(207, 87);
+            this.textBoxPhrase.Location = new System.Drawing.Point(12, 153);
             this.textBoxPhrase.Name = "textBoxPhrase";
-            this.textBoxPhrase.Size = new System.Drawing.Size(301, 22);
+            this.textBoxPhrase.Size = new System.Drawing.Size(492, 22);
             this.textBoxPhrase.TabIndex = 11;
             // 
             // textBoxStatus
@@ -139,21 +143,54 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.label1);
+            this.groupBox1.Controls.Add(this.numericUpDownMinScore);
             this.groupBox1.Controls.Add(this.checkBoxShowAudioProblems);
             this.groupBox1.Controls.Add(this.checkBoxShowHypothesis);
             this.groupBox1.Controls.Add(this.textBoxStatus);
             this.groupBox1.Controls.Add(this.audioLevelBar);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(189, 112);
+            this.groupBox1.Size = new System.Drawing.Size(189, 135);
             this.groupBox1.TabIndex = 15;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Recognition";
             // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(84, 105);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(75, 17);
+            this.label1.TabIndex = 14;
+            this.label1.Text = "Min. Score";
+            // 
+            // numericUpDownMinScore
+            // 
+            this.numericUpDownMinScore.Location = new System.Drawing.Point(8, 103);
+            this.numericUpDownMinScore.Maximum = new decimal(new int[] {
+            95,
+            0,
+            0,
+            0});
+            this.numericUpDownMinScore.Minimum = new decimal(new int[] {
+            75,
+            0,
+            0,
+            0});
+            this.numericUpDownMinScore.Name = "numericUpDownMinScore";
+            this.numericUpDownMinScore.Size = new System.Drawing.Size(70, 22);
+            this.numericUpDownMinScore.TabIndex = 13;
+            this.numericUpDownMinScore.Value = new decimal(new int[] {
+            75,
+            0,
+            0,
+            0});
+            // 
             // checkBoxEditPhrase
             // 
             this.checkBoxEditPhrase.AutoSize = true;
-            this.checkBoxEditPhrase.Location = new System.Drawing.Point(514, 89);
+            this.checkBoxEditPhrase.Location = new System.Drawing.Point(514, 153);
             this.checkBoxEditPhrase.Name = "checkBoxEditPhrase";
             this.checkBoxEditPhrase.Size = new System.Drawing.Size(54, 21);
             this.checkBoxEditPhrase.TabIndex = 16;
@@ -195,7 +232,7 @@
             // 
             // buttonClear
             // 
-            this.buttonClear.Location = new System.Drawing.Point(478, 488);
+            this.buttonClear.Location = new System.Drawing.Point(478, 87);
             this.buttonClear.Name = "buttonClear";
             this.buttonClear.Size = new System.Drawing.Size(90, 31);
             this.buttonClear.TabIndex = 20;
@@ -236,6 +273,7 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownMinScore)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -260,6 +298,8 @@
         private System.Windows.Forms.Label labelIsRecognizing;
         private System.Windows.Forms.Button buttonClear;
         private System.Windows.Forms.TextBox textBoxRecTimer;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.NumericUpDown numericUpDownMinScore;
     }
 }
 

@@ -72,8 +72,6 @@ AppMain::AppMain() :
     ui_func_map[KEY_TEST3] = &AppMain::UITest3;
     ui_func_map[KEY_TEST4] = &AppMain::UITest4;
 
-    action_func_map[FSMEventCode::E_TTS_SAY] = &AppMain::ActionTTSSay;
-    action_func_map[FSMEventCode::E_TTS_UP] = &AppMain::ActionTTSUp;
     action_func_map[FSMEventCode::E_SR_PHRASE] = &AppMain::ActionSRPhrase;
     action_func_map[FSMEventCode::E_SR_REC] = &AppMain::ActionSRRec;
     action_func_map[FSMEventCode::E_SR_STRIKES] = &AppMain::ActionSRStrikes;
@@ -83,6 +81,7 @@ AppMain::AppMain() :
     action_func_map[FSMEventCode::E_COM_UP] = &AppMain::ActionComUp;
     action_func_map[FSMEventCode::E_COM_ACK] = &AppMain::ActionComAck;
     action_func_map[FSMEventCode::E_UDP_UP] = &AppMain::ActionUDPUp;
+    action_func_map[FSMEventCode::E_UDP_SAY] = &AppMain::ActionUDPSay;
 
     // info for frame capture and recording
 
@@ -496,8 +495,6 @@ void AppMain::Go()
     if (cvx.load_cascades(cfg.app.cascade_path))
     {
         // start helper tasks
-//        std::thread tts_task(tts_task_func,
-  //          std::ref(tts_events), std::ref(app_events));
 
         std::thread com_task(com_task_func,
             cfg.app.com_port,
