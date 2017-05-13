@@ -15,6 +15,12 @@ FSMPhrase::~FSMPhrase()
 }
 
 
+bool FSMPhrase::is_idle() const
+{
+    return (state == STATE_IDLE);
+}
+
+
 void FSMPhrase::_to_wait(void)
 {
     // helper for transition to wait state (no outputs generated)

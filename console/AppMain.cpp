@@ -1,3 +1,8 @@
+
+// the following line prevents redefinition problems
+// when including windows.h file so it must be first line
+#define _WINSOCKAPI_  
+
 #include "Windows.h"
 #include "resource.h"
 
@@ -34,9 +39,9 @@ AppMain::AppMain() :
     is_looping(true),
     is_eyes_detect_enabled(true),
     is_grin_detect_enabled(false),
-    is_tts_up(false),
     is_com_up(false),
-    is_udp_up(false),
+    is_udp_rx_up(false),
+    is_udp_tx_up(false),
     s_strikes(""),
     s_current_phrase(""),
     n_z(0),
@@ -44,7 +49,8 @@ AppMain::AppMain() :
     s_ack_level(S_COM_NO_ACK),
     zoom_ct(0), // 1x
     pan_ct(0),  // centered
-    tilt_ct(0)  // centered
+    tilt_ct(0), // centered
+    udpTask(udp_events, app_events)
 {
     // these keys are converted to events for state machines
     cvsm_keys = { KEY_GO, KEY_HALT, KEY_LISTEN };
@@ -82,6 +88,7 @@ AppMain::AppMain() :
     action_func_map[FSMEventCode::E_COM_ACK] = &AppMain::ActionComAck;
     action_func_map[FSMEventCode::E_UDP_UP] = &AppMain::ActionUDPUp;
     action_func_map[FSMEventCode::E_UDP_SAY] = &AppMain::ActionUDPSay;
+    action_func_map[FSMEventCode::E_UDP_REC_VAL] = &AppMain::ActionUDPRecVal;
 
     // info for frame capture and recording
 
@@ -500,19 +507,17 @@ void AppMain::Go()
             cfg.app.com_port,
             std::ref(com_events), std::ref(app_events));
 
-        std::thread udp_task(udp_task_func,
-            "127.0.0.1", 60001, 60000,
-            std::ref(udp_events), std::ref(app_events));
+        udpTask.configure("127.0.0.1", 60001, 60000);
+        udpTask.Go();
 
+        // run until user commands app to exit
         loop();
 
         // command helper tasks to halt and wait for them to end
-        //tts_events.push(FSMEvent(FSMEventCode::E_TASK_HALT));
+
         com_events.push(FSMEvent(FSMEventCode::E_TASK_HALT));
-        udp_events.push(FSMEvent(FSMEventCode::E_TASK_HALT));
-        //tts_task.join();
         com_task.join();
-        udp_task.join();
+        udpTask.Stop();
 
         std::cout << util::GetString(IDS_APP_DONE) << std::endl;
     }

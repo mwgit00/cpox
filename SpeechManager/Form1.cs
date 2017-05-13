@@ -12,6 +12,8 @@ using System.Collections.Concurrent;
 using System.Speech.Recognition;
 using System.Speech.Synthesis;
 using System.Threading;
+using System.Net;
+using System.Net.Sockets;
 
 
 
@@ -21,6 +23,10 @@ namespace SpeechManager
 
     public partial class Form1 : Form
     {
+        private string s_partner_ip = "127.0.0.1";
+        private int listenPort = 60000;
+        private int answerPort = 60001;
+
         private const int REC_TIME_SEC = 20;
         private const int INTERVAL_MS = 100;
         private const int COUNTDOWN_MS = REC_TIME_SEC * 1000;
@@ -31,9 +37,9 @@ namespace SpeechManager
             new ConcurrentQueue<string>();
 
         private SpeechManager.UDPServer theServer = new SpeechManager.UDPServer();
-        private Thread T;
+        private Thread T_RX;
+        private Thread T_TX;
 
-        private bool is_auto = false;
         private bool is_last_cmd_done = true;
         private bool is_rec_tmr_running = false;
         private int t_ct;
@@ -47,6 +53,14 @@ namespace SpeechManager
 
         public Form1()
         {
+            InitializeComponent();
+        }
+
+        public Form1(string s, int rxPort, int txPort)
+        {
+            s_partner_ip = s;
+            listenPort = rxPort;
+            answerPort = txPort;
             InitializeComponent();
         }
 
@@ -98,15 +112,34 @@ namespace SpeechManager
 
             recognizer.SetInputToDefaultAudioDevice();
 
+            textBoxUI.VisibleChanged += (x_sender, x_e) =>
+            {
+                if (textBoxUI.Visible)
+                {
+                    textBoxUI.SelectionStart = textBoxUI.TextLength;
+                    textBoxUI.ScrollToCaret();
+                }
+            };
+
             // start the UDP command-response server
 
-            theServer.Init();
+            textBoxUI.AppendText("Partner: " + s_partner_ip + Environment.NewLine);
+            textBoxUI.AppendText("RX Port: " + listenPort.ToString() + Environment.NewLine);
+            textBoxUI.AppendText("TX Port: " + answerPort.ToString() + Environment.NewLine);
+
+            theServer.Init(s_partner_ip, listenPort, answerPort);
             if (theServer.IsOK())
             {
-                T = new Thread(new ThreadStart(theServer.ThreadProc));
                 theServer.UDPReceiveHappened += new UDPReceiveEventDelegate(server_UDPReceived);
-                T.IsBackground = true;
-                T.Start();
+
+                T_RX = new Thread(new ThreadStart(theServer.ThreadProcRX));
+                T_RX.IsBackground = true;
+                T_RX.Start();
+
+                T_TX = new Thread(new ThreadStart(theServer.ThreadProcTX));
+                T_TX.IsBackground = true;
+                T_TX.Start();
+
                 textBoxUI.AppendText("UDP Server initialized." + Environment.NewLine);
             }
             else
@@ -200,13 +233,10 @@ namespace SpeechManager
             is_last_cmd_done = true;
             is_rec_tmr_running = false;
             textBoxRecTimer.Text = "0";
-            if (!is_auto)
-            {
-                buttonRecognize.Enabled = true;
-                buttonCancel.Enabled = false;
-                buttonSpeak.Enabled = true;
-                buttonAuto.Enabled = true;
-            }
+
+            buttonRecognize.Enabled = true;
+            buttonCancel.Enabled = false;
+            buttonSpeak.Enabled = true;
 
             if (is_rec_valid)
             {
@@ -245,7 +275,6 @@ namespace SpeechManager
             buttonRecognize.Enabled = false;
             buttonCancel.Enabled = true;
             buttonSpeak.Enabled = false;
-            buttonAuto.Enabled = false;
             start_recognition();
         }
 
@@ -261,30 +290,14 @@ namespace SpeechManager
 
         private void buttonCancel_Click(object sender, EventArgs e)
         {
-            if (is_auto)
-            {
-                textBoxUI.AppendText("Auto mode disabled" + Environment.NewLine);
-                is_auto = false;
-                buttonSpeak.Enabled = true;
-                buttonRecognize.Enabled = true;
-                buttonAuto.Enabled = true;
-                buttonCancel.Enabled = false;
-            }
-            else
-            {
-                buttonCancel.Enabled = false;
-                cancel_speech_actions();
-            }
+            buttonCancel.Enabled = false;
+            cancel_speech_actions();
         }
 
         private void buttonSpeak_Click(object sender, EventArgs e)
         {
-            if (!is_auto)
-            {
-                buttonRecognize.Enabled = false;
-                buttonSpeak.Enabled = false;
-                buttonAuto.Enabled = false;
-            }
+            buttonRecognize.Enabled = false;
+            buttonSpeak.Enabled = false;
             start_speaking(phrase);
         }
 
@@ -295,12 +308,8 @@ namespace SpeechManager
 
         void tts_SpeakCompleted(object sender, SpeakCompletedEventArgs e)
         {
-            if (!is_auto)
-            {
-                buttonRecognize.Enabled = true;
-                buttonSpeak.Enabled = true;
-                buttonAuto.Enabled = true;
-            }
+            buttonRecognize.Enabled = true;
+            buttonSpeak.Enabled = true;
             labelIsSpeaking.BackColor = Color.Gray;
             theServer.SendMsg(s_tts_ack);
             is_last_cmd_done = true;
@@ -346,11 +355,11 @@ namespace SpeechManager
             // then assert server stop flag and wait for it to end
             timerEvent.Stop();
             theServer.Stop();
-            if (!T.Equals(null))
+            if (!T_RX.Equals(null))
             {
-                if (T.IsAlive)
+                if (T_RX.IsAlive)
                 {
-                    T.Join();
+                    T_RX.Join();
                 }
             }
         }
@@ -410,8 +419,8 @@ namespace SpeechManager
                 cmdFlag = xmsgq.TryDequeue(out s);
             }
 
-            // if cmd and auto mode then execute
-            if (cmdFlag && is_auto)
+            // if cmd found then execute
+            if (cmdFlag)
             {
                 String[] sarray = s.Split(' ');
                 string firstElem = sarray.First();
@@ -464,16 +473,6 @@ namespace SpeechManager
                     textBoxUI.AppendText("Unrecognized command." + Environment.NewLine);
                 }
             }
-        }
-
-        private void buttonAuto_Click(object sender, EventArgs e)
-        {
-            textBoxUI.AppendText("Auto mode enabled" + Environment.NewLine);
-            is_auto = true;
-            buttonSpeak.Enabled = false;
-            buttonRecognize.Enabled = false;
-            buttonAuto.Enabled = false;
-            buttonCancel.Enabled = true;
         }
 
         private void buttonClear_Click(object sender, EventArgs e)

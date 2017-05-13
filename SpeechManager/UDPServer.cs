@@ -25,11 +25,10 @@ namespace SpeechManager
         private volatile bool is_stop_requested = false;
         private volatile bool is_socket_error = false;
 
-        private string s_partner_ip = "127.0.0.1";
-        private const int listenPort = 60000;
-        private const int answerPort = 60001;
-        private UdpClient listener;
-        private IPEndPoint groupEP;
+        private UdpClient udpRxClient;
+        private UdpClient udpTxClient;
+        private IPEndPoint rxEP;
+        private IPEndPoint txEP;
 
         private readonly Mutex m = new Mutex();
         private volatile bool is_response_new = false;
@@ -43,13 +42,22 @@ namespace SpeechManager
             }
         }
 
-        public void Init()
+        public void Init(string s, int rxPort, int txPort)
         {
             try
             {
-                listener = new UdpClient(listenPort);
-                groupEP = new IPEndPoint(IPAddress.Any, listenPort);
-                listener.Client.ReceiveTimeout = 500;
+                udpRxClient = new UdpClient();
+                rxEP = new IPEndPoint(IPAddress.Parse(s), rxPort);
+                udpRxClient.ExclusiveAddressUse = false;
+                udpRxClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                udpRxClient.Client.Bind(rxEP);
+                udpRxClient.Client.ReceiveTimeout = 500;
+
+                udpTxClient = new UdpClient();
+                txEP = new IPEndPoint(IPAddress.Parse(s), txPort);
+                udpTxClient.ExclusiveAddressUse = false;
+                udpTxClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                udpTxClient.Client.Bind(rxEP);
             }
             catch (SocketException)
             {
@@ -77,17 +85,16 @@ namespace SpeechManager
             is_stop_requested = true;
         }
 
-        public void ThreadProc()
+        public void ThreadProcRX()
         {
             while (!is_stop_requested && !is_socket_error)
             {
                 try
                 {
-                    byte[] buffer = listener.Receive(ref groupEP);
+                    byte[] buffer = udpRxClient.Receive(ref rxEP);
                     if (buffer.Length > 0)
                     {
                         string s = System.Text.Encoding.UTF8.GetString(buffer, 0, buffer.Length);
-                        s_partner_ip = groupEP.Address.ToString();
                         OnUDPReceive(new UDPEventArgs(s));
                     }
                 }
@@ -98,36 +105,40 @@ namespace SpeechManager
                         is_socket_error = true;
                     }
                 }
+            }
 
+            if (!udpRxClient.Equals(null))
+            {
+                udpRxClient.Close();
+            }
+        }
+
+        public void ThreadProcTX()
+        {
+            while (!is_stop_requested && !is_socket_error)
+            {
                 // receive operation above has finished
                 // if a new response is ready then send it
                 // to IP address of last sender
 
-                if (!is_socket_error)
+                bool is_ok;
+                string s;
+
+                ////////////////////////
+                m.WaitOne();
+                is_ok = is_response_new;
+                is_response_new = false;
+                s = s_response;
+                m.ReleaseMutex();
+                ////////////////////////
+
+                if (is_ok)
                 {
-                    bool is_ok;
-                    string s;
-
-                    ////////////////////////
-                    m.WaitOne();
-                    is_ok = is_response_new;
-                    is_response_new = false;
-                    s = s_response;
-                    m.ReleaseMutex();
-                    ////////////////////////
-
-                    if (is_ok)
-                    {
-                        Console.WriteLine(s);
-                        byte[] buffer = Encoding.ASCII.GetBytes(s);
-                        listener.Send(buffer, buffer.Length, s_partner_ip, answerPort);
-                    }
+                    byte[] buffer = Encoding.ASCII.GetBytes(s);
+                    udpTxClient.Send(buffer, buffer.Length, txEP);
                 }
-            }
 
-            if (!listener.Equals(null))
-            {
-                listener.Close();
+                Thread.Sleep(20);
             }
         }
     }

@@ -9,32 +9,46 @@
 #define BUFLEN  (256)
 
 
-void udp_task_func(
+void thr_func_rx(UDPTask& r)
+{
+    r.rx_loop();
+}
+
+
+void thr_func_tx(UDPTask& r)
+{
+    r.tx_loop();
+}
+
+
+UDPTask::UDPTask(tEventQueue& rqrx, tEventQueue& rqtx) :
+    rqrx(rqrx),
+    rqtx(rqtx),
+    the_socket(INVALID_SOCKET),
+    is_socket_ok(false)
+{
+    atomic_is_stop_requested.store(false);
+}
+
+
+UDPTask::~UDPTask(void)
+{
+
+}
+
+
+void UDPTask::configure(
     const std::string& rsIP,
     const uint16_t port_rx,
-    const uint16_t port_tx,
-    tEventQueue& rqrx,
-    tEventQueue& rqtx)
+    const uint16_t port_tx)
 {
     bool result = true;
+    this->rsIP = rsIP;
+    this->port_rx = port_rx;
+    this->port_tx = port_tx;
 
-    SOCKET the_socket = INVALID_SOCKET;
     struct sockaddr_in server;
-    struct sockaddr_in si_other;
     int err;
-    int slen;
-    int recv_len;
-    char buf[BUFLEN];
-
-    std::wstring ws(rsIP.begin(), rsIP.end());
-
-    // init address and port for outgoing packets
-    si_other.sin_family = AF_INET;
-    si_other.sin_port = htons(port_tx);
-    InetPton(AF_INET, ws.c_str(), &si_other.sin_addr.s_addr);
-
-    // clear UDP RX buffer
-    memset(buf, '\0', BUFLEN);
 
     // create UDP datagram socket
     the_socket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -43,7 +57,8 @@ void udp_task_func(
         result = false;
     }
 
-    // re-use address in hopes that it will prevent timed wait state
+    // set option to re-use address
+    // this may not be necessary but I dont think it's hurting anything
     if (result)
     {
         DWORD optval = 1;
@@ -54,10 +69,10 @@ void udp_task_func(
         }
     }
 
-    // set receive timeout to 100ms for sleepy loop
+    // set receive timeout to 100ms for sleepy RX loop
     if (result)
     {
-        DWORD tv = 100;
+        DWORD tv = 500;
         err = setsockopt(the_socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
         if (err == SOCKET_ERROR)
         {
@@ -77,18 +92,56 @@ void udp_task_func(
         }
     }
 
-    if (result)
+    // threads won't go unless this is true
+    is_socket_ok = result;
+}
+
+
+void UDPTask::Go()
+{
+    thr_rx = std::thread(thr_func_rx, std::ref(*this));
+    thr_tx = std::thread(thr_func_tx, std::ref(*this));
+}
+
+
+void UDPTask::Stop()
+{
+    atomic_is_stop_requested.store(true);
+    
+    if (thr_rx.joinable())
     {
-        // report successful initialization
-        rqtx.push(FSMEvent(FSMEventCode::E_UDP_UP, 1));
+        thr_rx.join();
     }
 
-    while (result)
+    if (thr_tx.joinable())
+    {
+        thr_tx.join();
+    }
+
+    shutdown(the_socket, SD_BOTH);
+    closesocket(the_socket);
+}
+
+
+void UDPTask::rx_loop(void)
+{
+    bool result = is_socket_ok;
+    
+    int err;
+    int recv_len;
+    char buf[BUFLEN];
+
+    if (result)
+    {
+        // report successful RX initialization
+        rqtx.push(FSMEvent(FSMEventCode::E_UDP_UP, UDP_RX_MASK | 1));
+    }
+
+    while (!atomic_is_stop_requested.load() && result)
     {
         // receive, blocks until timeout
-        slen = (int) sizeof(struct sockaddr_in);
-        recv_len = recvfrom(the_socket, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen);
-        
+        recv_len = recv(the_socket, buf, BUFLEN, 0);
+
         if (recv_len == SOCKET_ERROR)
         {
             err = WSAGetLastError();
@@ -117,7 +170,32 @@ void udp_task_func(
                 rqtx.push(FSMEvent(FSMEventCode::E_UDP_REC_VAL, 1));
             }
         }
+    }
 
+    // report abnormal RX thread termination
+    rqtx.push(FSMEvent(FSMEventCode::E_UDP_UP, UDP_RX_MASK | 0));
+}
+
+
+void UDPTask::tx_loop(void)
+{
+    bool result = is_socket_ok;
+
+    // init address and port for outgoing packets
+    struct sockaddr_in si_other;
+    std::wstring ws(rsIP.begin(), rsIP.end());
+    si_other.sin_family = AF_INET;
+    si_other.sin_port = htons(port_tx);
+    InetPton(AF_INET, ws.c_str(), &si_other.sin_addr.s_addr);
+    
+    if (result)
+    {
+        // report successful TX initialization
+        rqtx.push(FSMEvent(FSMEventCode::E_UDP_UP, UDP_TX_MASK | 1));
+    }
+
+    while (!atomic_is_stop_requested.load() && result)
+    {
         while (rqrx.size() && result)
         {
             std::string s;
@@ -160,17 +238,18 @@ void udp_task_func(
             {
                 // send command to speech manager server
                 int n = static_cast<int>(s.length());
-                err = sendto(the_socket, s.data(), n, 0, (struct sockaddr*) &si_other, slen);
+                int slen = (int) sizeof(struct sockaddr_in);
+                int err = sendto(the_socket, s.data(), n, 0, (struct sockaddr*) &si_other, slen);
                 if (err == SOCKET_ERROR)
                 {
                     result = false;
                 }
             }
         }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(60));
     }
 
-    closesocket(the_socket);
-
-    // report thread termination
-    rqtx.push(FSMEvent(FSMEventCode::E_UDP_UP, 0));
+    // report abnormal TX thread termination
+    rqtx.push(FSMEvent(FSMEventCode::E_UDP_UP, UDP_TX_MASK | 0));
 }

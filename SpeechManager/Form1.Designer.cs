@@ -29,7 +29,6 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.textBoxUI = new System.Windows.Forms.TextBox();
             this.audioLevelBar = new System.Windows.Forms.ProgressBar();
             this.buttonRecognize = new System.Windows.Forms.Button();
             this.checkBoxShowAudioProblems = new System.Windows.Forms.CheckBox();
@@ -44,25 +43,13 @@
             this.checkBoxEditPhrase = new System.Windows.Forms.CheckBox();
             this.timerEvent = new System.Windows.Forms.Timer(this.components);
             this.labelIsSpeaking = new System.Windows.Forms.Label();
-            this.buttonAuto = new System.Windows.Forms.Button();
             this.labelIsRecognizing = new System.Windows.Forms.Label();
             this.buttonClear = new System.Windows.Forms.Button();
             this.textBoxRecTimer = new System.Windows.Forms.TextBox();
+            this.textBoxUI = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownMinScore)).BeginInit();
             this.SuspendLayout();
-            // 
-            // textBoxUI
-            // 
-            this.textBoxUI.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
-            this.textBoxUI.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBoxUI.Location = new System.Drawing.Point(12, 181);
-            this.textBoxUI.Multiline = true;
-            this.textBoxUI.Name = "textBoxUI";
-            this.textBoxUI.ReadOnly = true;
-            this.textBoxUI.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBoxUI.Size = new System.Drawing.Size(555, 338);
-            this.textBoxUI.TabIndex = 0;
             // 
             // audioLevelBar
             // 
@@ -211,16 +198,6 @@
             this.labelIsSpeaking.Size = new System.Drawing.Size(20, 22);
             this.labelIsSpeaking.TabIndex = 17;
             // 
-            // buttonAuto
-            // 
-            this.buttonAuto.Location = new System.Drawing.Point(478, 49);
-            this.buttonAuto.Name = "buttonAuto";
-            this.buttonAuto.Size = new System.Drawing.Size(90, 31);
-            this.buttonAuto.TabIndex = 18;
-            this.buttonAuto.Text = "Auto";
-            this.buttonAuto.UseVisualStyleBackColor = true;
-            this.buttonAuto.Click += new System.EventHandler(this.buttonAuto_Click);
-            // 
             // labelIsRecognizing
             // 
             this.labelIsRecognizing.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
@@ -232,7 +209,7 @@
             // 
             // buttonClear
             // 
-            this.buttonClear.Location = new System.Drawing.Point(478, 87);
+            this.buttonClear.Location = new System.Drawing.Point(478, 49);
             this.buttonClear.Name = "buttonClear";
             this.buttonClear.Size = new System.Drawing.Size(90, 31);
             this.buttonClear.TabIndex = 20;
@@ -250,15 +227,31 @@
             this.textBoxRecTimer.Text = "0";
             this.textBoxRecTimer.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
+            // textBoxUI
+            // 
+            this.textBoxUI.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.textBoxUI.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
+            this.textBoxUI.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBoxUI.ImeMode = System.Windows.Forms.ImeMode.Disable;
+            this.textBoxUI.Location = new System.Drawing.Point(12, 181);
+            this.textBoxUI.Multiline = true;
+            this.textBoxUI.Name = "textBoxUI";
+            this.textBoxUI.ReadOnly = true;
+            this.textBoxUI.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+            this.textBoxUI.Size = new System.Drawing.Size(556, 412);
+            this.textBoxUI.TabIndex = 0;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(580, 531);
+            this.ClientSize = new System.Drawing.Size(580, 600);
+            this.Controls.Add(this.textBoxUI);
             this.Controls.Add(this.textBoxRecTimer);
             this.Controls.Add(this.buttonClear);
             this.Controls.Add(this.labelIsRecognizing);
-            this.Controls.Add(this.buttonAuto);
             this.Controls.Add(this.labelIsSpeaking);
             this.Controls.Add(this.checkBoxEditPhrase);
             this.Controls.Add(this.groupBox1);
@@ -266,7 +259,9 @@
             this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.textBoxPhrase);
             this.Controls.Add(this.buttonRecognize);
-            this.Controls.Add(this.textBoxUI);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
+            this.MaximumSize = new System.Drawing.Size(598, 680);
+            this.MinimumSize = new System.Drawing.Size(598, 320);
             this.Name = "Form1";
             this.Text = "Speech Manager 1.0";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
@@ -280,8 +275,6 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.TextBox textBoxUI;
         private System.Windows.Forms.ProgressBar audioLevelBar;
         private System.Windows.Forms.Button buttonRecognize;
         private System.Windows.Forms.CheckBox checkBoxShowAudioProblems;
@@ -294,12 +287,12 @@
         private System.Windows.Forms.CheckBox checkBoxEditPhrase;
         private System.Windows.Forms.Timer timerEvent;
         private System.Windows.Forms.Label labelIsSpeaking;
-        private System.Windows.Forms.Button buttonAuto;
         private System.Windows.Forms.Label labelIsRecognizing;
         private System.Windows.Forms.Button buttonClear;
         private System.Windows.Forms.TextBox textBoxRecTimer;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.NumericUpDown numericUpDownMinScore;
+        private System.Windows.Forms.TextBox textBoxUI;
     }
 }
 

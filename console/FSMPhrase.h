@@ -24,6 +24,8 @@ public:
     FSMPhrase(tPhraseCfg& r);
     virtual ~FSMPhrase();
 
+    bool is_idle() const;
+
     void check_timers(tEventQueue& rq);
     void crank(const FSMEvent& this_event, tEventQueue& rq);
     const FSMSnapShot& Snapshot() const;

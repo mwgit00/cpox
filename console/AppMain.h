@@ -13,6 +13,7 @@
 #include "CVMain.h"
 #include "PhraseManager.h"
 #include "Settings.h"
+#include "UDPTask.h"
 
 
 #define S_COM_NO_ACK    ("--")
@@ -79,6 +80,7 @@ public:
     void ActionComAck(const FSMEvent& r);
     void ActionUDPUp(const FSMEvent& r);
     void ActionUDPSay(const FSMEvent& r);
+    void ActionUDPRecVal(const FSMEvent& r);
 
 public:
 
@@ -96,9 +98,9 @@ private:
     bool is_looping;
     bool is_eyes_detect_enabled;
     bool is_grin_detect_enabled;
-    bool is_tts_up;
     bool is_com_up;
-    bool is_udp_up;
+    bool is_udp_rx_up;
+    bool is_udp_tx_up;
     std::string s_strikes;
     std::string s_current_phrase;
     uint32_t n_z;
@@ -130,6 +132,8 @@ private:
     tEventQueue app_events;
     tEventQueue com_events;
     tEventQueue udp_events;
+
+    UDPTask udpTask;
     
     std::map<char, AppMain::tVVFuncPtr> ui_func_map;
     std::map<FSMEventCode, AppMain::tVRevFuncPtr> action_func_map;

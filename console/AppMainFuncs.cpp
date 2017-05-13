@@ -32,6 +32,7 @@ void AppMain::UITestSay(void)
         // test retrieval and speaking of next phrase
         // it will be loaded into Speech Manager
         s_current_phrase = phrase_mgr.next_phrase();
+        std::cout << "SAY " << s_current_phrase << std::endl;
         udp_events.push(FSMEvent(FSMEventCode::E_UDP_LOAD, s_current_phrase));
         udp_events.push(FSMEvent(FSMEventCode::E_UDP_REPEAT));
     }
@@ -42,6 +43,7 @@ void AppMain::UITestSpeechRec(void)
     if (cvsm.is_idle())
     {
         // test recognition of last loaded phrase
+        std::cout << "REC " << s_current_phrase << std::endl;
         udp_events.push(FSMEvent(FSMEventCode::E_UDP_REC));
     }
 }
@@ -252,8 +254,26 @@ void AppMain::ActionComAck(const FSMEvent& r)
 
 void AppMain::ActionUDPUp(const FSMEvent& r)
 {
-    is_udp_up = r.Data() ? true : false;
-    int ids = is_udp_up ? IDS_APP_UDP_UP : IDS_APP_UDP_DOWN;
+    int ids = IDS_APP_UNKNOWN;
+    
+    switch (r.Data())
+    {
+    case (UDP_RX_MASK | 0):
+        ids = IDS_APP_UDP_RX_DOWN;
+        break;
+    case (UDP_RX_MASK | 1):
+        ids = IDS_APP_UDP_RX_UP;
+        break;
+    case (UDP_TX_MASK | 0):
+        ids = IDS_APP_UDP_TX_DOWN;
+        break;
+    case (UDP_TX_MASK | 1):
+        ids = IDS_APP_UDP_TX_UP;
+        break;
+    default:
+        break;
+    }
+
     std::cout << util::GetString(ids) << std::endl;
 }
 
@@ -261,4 +281,13 @@ void AppMain::ActionUDPSay(const FSMEvent& r)
 {
     // pass event to UDP task
     udp_events.push(r);
+}
+
+void AppMain::ActionUDPRecVal(const FSMEvent& r)
+{
+    // this is just for testing in the app
+    if (psm.is_idle())
+    {
+        std::cout << "REC " << r.Data() << std::endl;
+    }
 }
