@@ -27,9 +27,8 @@ namespace SpeechManager
         private int listenPort = 60000;
         private int answerPort = 60001;
 
-        private const int REC_TIME_SEC = 20;
+        private int rec_time_sec = 20;
         private const int INTERVAL_MS = 100;
-        private const int COUNTDOWN_MS = REC_TIME_SEC * 1000;
         private const string s_tts_ack = "tts 1";
         private const string s_rec_ack = "rec ";
 
@@ -141,10 +140,12 @@ namespace SpeechManager
                 T_TX.Start();
 
                 textBoxUI.AppendText("UDP Server initialized." + Environment.NewLine);
+                labelIsServerOK.BackColor = Color.Green;
             }
             else
             {
                 textBoxUI.AppendText("UDP Server failed to initialize." + Environment.NewLine);
+                labelIsServerOK.BackColor = Color.Red;
             }
 
             // set up GUI
@@ -238,20 +239,21 @@ namespace SpeechManager
             buttonCancel.Enabled = false;
             buttonSpeak.Enabled = true;
 
+            string sval = "0";
+            string sresult = "FAIL: ";
             if (is_rec_valid)
             {
                 double thr = (double)numericUpDownMinScore.Value;
                 string sconf = rec_conf.ToString("0.000");
-                string sresult = "PASS: ";
-                string sval = "1";
-                if (rec_conf < (thr / 100.0))
+                if (rec_conf > (thr / 100.0))
                 {
-                    sresult = "FAIL: ";
-                    sval = "0";
+                    sresult = "PASS: ";
+                    sval = "1";
                 }
                 textBoxUI.AppendText(sresult + sconf + Environment.NewLine);
-                theServer.SendMsg(s_rec_ack + sval);
             }
+
+            theServer.SendMsg(s_rec_ack + sval);
         }
 
         void sre_SpeechHypothesized(object sender, SpeechHypothesizedEventArgs e)
@@ -390,12 +392,23 @@ namespace SpeechManager
             bool cmdFlag = false;
             bool is_cancel = false;
 
+            // color the server status box
+            // it will go red if there was a socket error
+            if (theServer.IsOK())
+            {
+                labelIsServerOK.BackColor = Color.Green;
+            }
+            else
+            {
+                labelIsServerOK.BackColor = Color.Red;
+            }
+
             // handle recognition timeout
             if (is_rec_tmr_running)
             {
                 t_ct += INTERVAL_MS;
                 int x = t_ct / 1000;
-                int t_left = REC_TIME_SEC - x;
+                int t_left = rec_time_sec - x;
                 textBoxRecTimer.Text = t_left.ToString();
                 if (t_left == 0)
                 {
@@ -488,7 +501,8 @@ namespace SpeechManager
             is_rec_valid = false;
             word_ct = 0;
             t_ct = 0;
-            textBoxRecTimer.Text = REC_TIME_SEC.ToString();
+            rec_time_sec = Decimal.ToInt32(numericUpDownRecTime.Value);
+            textBoxRecTimer.Text = rec_time_sec.ToString();
             textBoxStatus.BackColor = Color.LightGreen;
             textBoxStatus.Text = "Silence";
             labelIsRecognizing.BackColor = Color.LightGreen;

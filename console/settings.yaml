@@ -12,6 +12,7 @@ loop:
    norm_time: 4
    warn_time: 3
    act_time: 5
+   smile_thr: 10
 phrase:
    wait_time: 10
    rec_time: 25

@@ -61,6 +61,8 @@ public:
     void UITiltD(void);
     void UIResetZoom(void);
     void UIResetPanTilt(void);
+    void UISmileU(void);
+    void UISmileD(void);
     void UITest1(void);
     void UITest2(void);
     void UITest3(void);

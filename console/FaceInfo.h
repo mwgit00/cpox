@@ -23,6 +23,8 @@ public:
     bool is_eyes_detect_enabled;
     bool is_grin_detect_enabled;
 
+    int smile_thr;
+
     double eyes_ratio;
     double nose_ratio;
     double grin_ratio;

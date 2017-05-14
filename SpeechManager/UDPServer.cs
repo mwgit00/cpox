@@ -24,6 +24,7 @@ namespace SpeechManager
 
         private volatile bool is_stop_requested = false;
         private volatile bool is_socket_error = false;
+        private volatile bool is_first_rx_ok = false;
 
         private UdpClient udpRxClient;
         private UdpClient udpTxClient;
@@ -94,6 +95,9 @@ namespace SpeechManager
                     byte[] buffer = udpRxClient.Receive(ref rxEP);
                     if (buffer.Length > 0)
                     {
+                        // set flag that socket has received something
+                        // Windows has issues if TX attempted before RX occurs
+                        is_first_rx_ok = true;
                         string s = System.Text.Encoding.UTF8.GetString(buffer, 0, buffer.Length);
                         OnUDPReceive(new UDPEventArgs(s));
                     }
@@ -117,10 +121,6 @@ namespace SpeechManager
         {
             while (!is_stop_requested && !is_socket_error)
             {
-                // receive operation above has finished
-                // if a new response is ready then send it
-                // to IP address of last sender
-
                 bool is_ok;
                 string s;
 
@@ -132,13 +132,21 @@ namespace SpeechManager
                 m.ReleaseMutex();
                 ////////////////////////
 
-                if (is_ok)
+                // only send a string if it has been newly stuff in buffer
+                // and if an RX has already occurred, otherwise Windows
+                // will throw an error in the RX loop
+                if (is_ok && is_first_rx_ok)
                 {
                     byte[] buffer = Encoding.ASCII.GetBytes(s);
                     udpTxClient.Send(buffer, buffer.Length, txEP);
                 }
 
                 Thread.Sleep(20);
+            }
+
+            if (!udpTxClient.Equals(null))
+            {
+                udpTxClient.Close();
             }
         }
     }

@@ -25,7 +25,6 @@ bool CVMain::load_cascades(const std::string& path)
     std::string face_cascade_name = path + "haarcascade_frontalface_alt.xml";
     std::string eyes_cascade_name = path + "haarcascade_eye_tree_eyeglasses.xml";
     std::string grin_cascade_name = path + "haarcascade_smile.xml";
-    //std::string grin_cascade_name = "haarcascade_mcs_mouth.xml"
 
     if (!cc_face.load(face_cascade_name))
     {
@@ -120,9 +119,8 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
         {
             // try to find grin in mouth area
             // use magic parameter to tune
-            // TODO:  tune during start-up?
 
-            int magic = 80;
+            int magic = (rFaceInfo.smile_thr * 4) + 1;
 
             Mat grinROI = r(rFaceInfo.rect_grin_roi);
 

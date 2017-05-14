@@ -32,6 +32,7 @@ bool Settings::Read(const std::string& rs)
         loop.norm_time = n["norm_time"];
         loop.warn_time = n["warn_time"];
         loop.act_time = n["act_time"];
+        loop.smile_thr = n["smile_thr"];
 
         n = fs["phrase"];
         phrase.wait_time = n["wait_time"];
@@ -65,6 +66,7 @@ bool Settings::Write(const std::string& rs) const
         fs << "norm_time" << loop.norm_time;
         fs << "warn_time" << loop.warn_time;
         fs << "act_time" << loop.act_time;
+        fs << "smile_thr" << loop.smile_thr;
         fs << "}";
 
         fs << "phrase" << "{";
@@ -94,6 +96,7 @@ void Settings::ApplyDefaults(void)
     loop.norm_time = 4;
     loop.warn_time = 3;
     loop.act_time = 5;
+    loop.smile_thr = 10;
 
     phrase.wait_time = 10;
     phrase.rec_time = 25;

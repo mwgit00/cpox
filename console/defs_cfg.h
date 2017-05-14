@@ -15,11 +15,12 @@ typedef struct
 
 typedef struct
 {
-    int         max_level;
+    int         max_level;  ///< rail for maximum output level
     int         inh_time;   ///< (sec) inhibit before starting
     int         norm_time;  ///< (sec) no face/eyes in this time, goes to WARN
     int         warn_time;  ///< (sec) no face/eyes in this time, goes to ACT
     int         act_time;   ///< (sec) duration of ACT
+    int         smile_thr;  ///< default smile threshold
 } tLoopCfg;
 
 typedef struct

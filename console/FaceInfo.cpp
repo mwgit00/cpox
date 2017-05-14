@@ -11,6 +11,7 @@ FaceInfo::FaceInfo() :
     is_face_found(false),
     is_eyes_detect_enabled(true),
     is_grin_detect_enabled(true),
+    smile_thr(10),
     eyes_ratio(0.2),
     nose_ratio(0.5625),
     grin_ratio(0.5625),

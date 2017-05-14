@@ -73,6 +73,8 @@ AppMain::AppMain() :
     ui_func_map[KEY_TILTD] = &AppMain::UITiltD;
     ui_func_map[KEY_ZOOM0] = &AppMain::UIResetZoom;
     ui_func_map[KEY_PT0] = &AppMain::UIResetPanTilt;
+    ui_func_map[KEY_SMILED] = &AppMain::UISmileD;
+    ui_func_map[KEY_SMILEU] = &AppMain::UISmileU;
     ui_func_map[KEY_TEST1] = &AppMain::UITest1;
     ui_func_map[KEY_TEST2] = &AppMain::UITest2;
     ui_func_map[KEY_TEST3] = &AppMain::UITest3;
@@ -216,7 +218,7 @@ void AppMain::show_help()
     std::cout << util::GetKeyHelpString(KEY_HALT, IDS_HELP_KEY_HALT) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_LISTEN, IDS_HELP_KEY_LISTEN) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_VIDREC, IDS_HELP_KEY_VIDREC) << std::endl;
-    std::cout << util::GetKeyHelpString(KEY_NEWMOV, IDS_HELP_KEY_NEWMOV) << std::endl;
+    //std::cout << util::GetKeyHelpString(KEY_NEWMOV, IDS_HELP_KEY_NEWMOV) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_ZOOMGT, IDS_HELP_KEY_ZOOMGT) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_ZOOMLT, IDS_HELP_KEY_ZOOMLT) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_ZOOM0, IDS_HELP_KEY_ZOOM0) << std::endl;
@@ -226,6 +228,8 @@ void AppMain::show_help()
     std::cout << util::GetKeyHelpString(KEY_TILTD, IDS_HELP_KEY_TILTD) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_PT0, IDS_HELP_KEY_PT0) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_SAY, IDS_HELP_KEY_SAY) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_SMILEU, IDS_HELP_KEY_SMILEU) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_SMILED, IDS_HELP_KEY_SMILED) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_TTSREC, IDS_HELP_KEY_TTSREC) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_EXTON, IDS_HELP_KEY_EXTON) << std::endl;
     std::cout << "ESC - " << util::GetString(IDS_HELP_KEY_QUIT) << "." << std::endl;
@@ -284,6 +288,11 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         is_com_blinky_on ? SCA_BLUE_GREEN : SCA_BLACK, CV_FILLED);
     putText(img_final, s_ack_level, Point(24, hn * 4 + 14),
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
+
+    // smile threshold
+    rectangle(img_final, Rect(Point(0, hn * 5), Point(wn, hn * 6)), SCA_PURPLE, CV_FILLED);
+    rectangle(img_final, Rect(Point(0, hn * 5), Point(wn, hn * 6)), SCA_WHITE);
+    rectangle(img_final, Rect(Point(2, (hn * 5) + 2), Point(cfg.loop.smile_thr + 2, (hn * 6) - 2)), SCA_YELLOW, CV_FILLED);
 
     // draw speech recognition progress (timeout) bar if active
     // just a black rectangle that gets filled with gray blocks
@@ -424,6 +433,7 @@ void AppMain::loop()
 
         face_info.is_eyes_detect_enabled = is_eyes_detect_enabled;
         face_info.is_grin_detect_enabled = is_grin_detect_enabled;
+        face_info.smile_thr = cfg.loop.smile_thr;
         bool b_found = cvx.detect(img_gray, face_info);
 
         // enqueue any keyboard events

@@ -98,13 +98,16 @@ void AppMain::UIZoomOut(void)
     if (zoom_ct > 0)
     {
         zoom_ct--;
+        
         // pan range depends on zoom
         // so if zooming out then must adjust pan/tilt counts
         // their absolute values cannot be greater than zoom count
+        
         if (abs(pan_ct) > zoom_ct)
         {
             pan_ct = (pan_ct < 0) ? pan_ct + 1 : pan_ct - 1;
         }
+        
         if (abs(tilt_ct) > zoom_ct)
         {
             tilt_ct = (tilt_ct < 0) ? tilt_ct + 1 : tilt_ct - 1;
@@ -173,6 +176,18 @@ void AppMain::UITest4(void)
 {
     // set ext device maximum output level (limited in configuration)
     app_events.push(FSMEvent(FSMEventCode::E_COM_LEVEL, cfg.loop.max_level));
+}
+
+void AppMain::UISmileU(void)
+{
+    int& ri = cfg.loop.smile_thr;
+    ri = (ri < 50) ? ri + 2 : ri;
+}
+
+void AppMain::UISmileD(void)
+{
+    int& ri = cfg.loop.smile_thr;
+    ri = (ri > 0) ? ri - 2 : ri;
 }
 
 

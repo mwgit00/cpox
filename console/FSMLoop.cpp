@@ -149,7 +149,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
             // reset speech rec. SM so it can be started again
             // announce start of monitoring
             rq.push(FSMEvent(FSMEventCode::E_SR_RESET));
-            rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "go"));
+            rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "eyes forward and smile"));
         }
     }
     else if (state == STATE_NORM)
