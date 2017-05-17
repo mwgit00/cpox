@@ -15,7 +15,9 @@ typedef struct
 
 typedef struct
 {
-    int         max_level;  ///< rail for maximum output level
+    int         ext_on_ct;  ///< number of 10hz ticks that output will be on
+    int         min_level;  ///< rail for maximum output level (zero-based)
+    int         max_level;  ///< rail for maximum output level (zero-based)
     int         inh_time;   ///< (sec) inhibit before starting
     int         norm_time;  ///< (sec) no face/eyes in this time, goes to WARN
     int         warn_time;  ///< (sec) no face/eyes in this time, goes to ACT

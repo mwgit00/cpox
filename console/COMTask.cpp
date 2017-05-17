@@ -24,27 +24,20 @@
 
 enum
 {
-    CMD_SYNC =      'C',    // start of cmd recognized by ext device
-    CMD_RESP =      'R',    // start of response to cmd
-    CMD_PING =      '0',    // ping, response has max of level settings
-    CMD_LEVEL_1 =   '1',    // set level 1 to value a-y (25 settings)
-    CMD_LEVEL_2 =   '2',    // set level 2 to value a-y (25 settings)
-    CMD_OUTPUT_ON = '3',    // activate outputs
-    CMD_VAL_MIN =   'a',    // minimum value setting
-    CMD_VAL_MAX =   'y',    // maximum value setting
-};
-
-
-enum
-{
     STATE_IDLE = 0,
     STATE_RESP,
     STATE_CMD,
 };
 
-int com_state = STATE_IDLE;
-std::string s_ack = "???";
-tEventQueue self_q;
+
+/// state variable for parsing incoming commands
+static int com_state = STATE_IDLE;
+
+/// buffer for sending an ACK response
+static std::string s_ack = "???";
+
+/// queue for storing a sequence of many commands to external device
+static tEventQueue self_q;
 
 
 // command is of form (C[0-3][a-y])
@@ -129,6 +122,7 @@ void com_task_func(
     timeouts.WriteTotalTimeoutConstant = 0;
 
     // do unicode name shenanigans
+    // to get name for port that can be used below
     std::wstring ws(rsPortName.begin(), rsPortName.end());
 
     hComm = CreateFile(ws.c_str(),
@@ -193,7 +187,7 @@ void com_task_func(
             std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_DELAY_MS));
 
             // read bytes from the COM port
-            // call returns immediately
+            // this call will return immediately
             // then check result and see if any bytes were read
             
             DWORD nread = 0;
@@ -215,6 +209,10 @@ void com_task_func(
                 }
             }
             
+            // now that receiving is done
+            // check if any commands were received from application
+            // sequences of commands for the external device may be queued
+
             while (rqrx.size())
             {
                 FSMEvent x = rqrx.pop();
@@ -236,7 +234,7 @@ void com_task_func(
                         ct = (ct > LOOP_MAX_ON_CT_SEC) ? LOOP_MAX_ON_CT_SEC : ct;
                         for (uint32_t i = 0; i < ct; i++)
                         {
-                            self_q.push(FSMEvent(FSMEventCode::E_COM_XON, 1));
+                            self_q.push(FSMEvent(FSMEventCode::E_COM_XON));
                         }
                         k_time_div = 0; 
                         break;
@@ -246,11 +244,11 @@ void com_task_func(
                         // queue up fixed number of LEVEL commands for external device
                         // each output will need its own commands queued for it
                         // repeated commands must be sent to reach desired level
-                        uint32_t level = x.Data();
+                        uint32_t external_output_level = x.Data();
                         for (uint32_t i = 0; i < LOOP_CT_LEVEL_ADJ; i++)
                         {
-                            self_q.push(FSMEvent(FSMEventCode::E_COM_LEVEL_1, level));
-                            self_q.push(FSMEvent(FSMEventCode::E_COM_LEVEL_2, level));
+                            self_q.push(FSMEvent(FSMEventCode::E_COM_LEVEL_1, external_output_level));
+                            self_q.push(FSMEvent(FSMEventCode::E_COM_LEVEL_2, external_output_level));
                         }
                         k_time_div = 0;
                         break;
@@ -269,6 +267,9 @@ void com_task_func(
                     }
                 }
             }
+
+            // now check timer for periodic ping
+            // and check self queue to send commands to external device
 
             if (self_q.empty())
             {
@@ -294,7 +295,7 @@ void com_task_func(
                 {
                     bool result = false;
                     FSMEvent x = self_q.pop();
-                    char c_value = static_cast<char>(x.Data());
+                    char c_level = static_cast<char>(x.Data()) + CMD_VAL_MIN;
                     switch (x.Code())
                     {
                         case FSMEventCode::E_COM_XON:
@@ -304,13 +305,11 @@ void com_task_func(
                         }
                         case FSMEventCode::E_COM_LEVEL_1:
                         {
-                            char c_level = CMD_VAL_MIN + c_value;
                             result = send_cmd(hComm, CMD_LEVEL_1, c_level);
                             break;
                         }
                         case FSMEventCode::E_COM_LEVEL_2:
                         {
-                            char c_level = CMD_VAL_MIN + c_value;
                             result = send_cmd(hComm, CMD_LEVEL_2, c_level);
                             break;
                         }

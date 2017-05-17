@@ -16,10 +16,10 @@ public:
     enum
     {
         STATE_IDLE = 0, ///< stopped
-        STATE_INH = 1, ///< start - up delay
+        STATE_INH = 1,  ///< start - up delay
         STATE_NORM = 2, ///< valid face / eye detections
         STATE_WARN = 3, ///< string of misses, warning to user
-        STATE_ACT = 4, ///< act after too many misses
+        STATE_ACT = 4,  ///< act after too many misses
     };
 
     FSMLoop() = delete;
@@ -41,7 +41,7 @@ private:
     tLoopCfg& rCfg;
 
     int state;
-    int level;
+    int external_output_level;  ///< zero-based output level
     PolledTimer cv_timer;
     FSMSnapShot snapshot;
 };

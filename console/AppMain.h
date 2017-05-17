@@ -17,6 +17,7 @@
 
 
 #define S_COM_NO_ACK    ("--")
+#define S_COM_EXT_ON    ("ON")
 
 
 class AppMain
@@ -110,7 +111,7 @@ private:
     // COM status logic
 
     bool is_com_blinky_on;
-    std::string s_ack_level;
+    std::string s_com_ack;
     std::chrono::time_point<std::chrono::steady_clock> t_last_ack;
 
     // frame recording and frames-per-second (fps) info

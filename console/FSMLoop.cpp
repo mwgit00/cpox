@@ -6,7 +6,7 @@
 FSMLoop::FSMLoop(tLoopCfg& r) :
     rCfg(r),
     state(STATE_IDLE),
-    level(0)
+    external_output_level(r.min_level)
 {
     snapshot.sec = 0;
     snapshot.color = SCA_BLACK;
@@ -37,16 +37,11 @@ void FSMLoop::_to_act(tEventQueue& rq)
     cv_timer.start(rCfg.act_time);
     state = STATE_ACT;
     
-    // increment level unless it has reached maximum
-    if (level < rCfg.max_level)
-    {
-        level += 1;
-    }
-
     // stop phrase machine
-    // turn on external action (pass along new level data)
+    // turn on external action
+    
     rq.push(FSMEvent(FSMEventCode::E_SR_STOP));
-    rq.push(FSMEvent(FSMEventCode::E_COM_XON, level));
+    rq.push(FSMEvent(FSMEventCode::E_COM_XON, rCfg.ext_on_ct));
 }
 
 void FSMLoop::check_timers(tEventQueue& rq)
@@ -111,14 +106,17 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
             if (this_event.Data() == KEY_HALT)
             {
                 cv_timer.stop();
-                level = 0u;
+                external_output_level = rCfg.min_level;
                 state = STATE_IDLE;
 
                 // turn off phrase state machine
                 // turn off any external action
+                // set levels back to minimum
                 // announce halt
+                
                 rq.push(FSMEvent(FSMEventCode::E_SR_STOP));
                 rq.push(FSMEvent(FSMEventCode::E_COM_XOFF));
+                rq.push(FSMEvent(FSMEventCode::E_COM_LEVEL, external_output_level));
                 rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "session halted"));
                 
                 ///////
@@ -135,8 +133,13 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
             if (this_event.Data() == KEY_GO)
             {
                 cv_timer.start(rCfg.inh_time);
+                external_output_level = rCfg.min_level;
                 state = STATE_INH;
+                
+                // set levels back to minimum
                 // announce countdown has started
+                
+                rq.push(FSMEvent(FSMEventCode::E_COM_LEVEL, external_output_level));
                 rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "get ready"));
             }
         }
@@ -188,10 +191,20 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
         if (this_event.Code() == FSMEventCode::E_TMR_CV)
         {
             _to_norm();
+
             // restart phrase machine
             // turn off any external action
+            
             rq.push(FSMEvent(FSMEvent(FSMEventCode::E_SR_RESTART)));
             rq.push(FSMEvent(FSMEventCode::E_COM_XOFF));
+
+            // increment level unless it has reached maximum
+            
+            if (external_output_level < rCfg.max_level)
+            {
+                external_output_level++;
+                rq.push(FSMEvent(FSMEventCode::E_COM_LEVEL, external_output_level));
+            }
         }
     }
 }

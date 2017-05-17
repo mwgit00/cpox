@@ -13,8 +13,10 @@ Settings::~Settings()
 bool Settings::Read(const std::string& rs)
 {
     bool result = false;
+    
     cv::FileStorage fs;
     fs.open(rs, cv::FileStorage::READ);
+    
     if (fs.isOpened())
     {
         cv::FileNode n;
@@ -27,6 +29,8 @@ bool Settings::Read(const std::string& rs)
         app.cascade_path = n["cascade_path"];
 
         n = fs["loop"];
+        loop.ext_on_ct = n["ext_on_ct"];
+        loop.min_level = n["min_level"];
         loop.max_level = n["max_level"];
         loop.inh_time = n["inh_time"];
         loop.norm_time = n["norm_time"];
@@ -42,14 +46,17 @@ bool Settings::Read(const std::string& rs)
 
         result = true;
     }
+    
     return result;
 }
 
 bool Settings::Write(const std::string& rs) const
 {
     bool result = false;
+    
     cv::FileStorage fs;
     fs.open(rs, cv::FileStorage::WRITE);
+    
     if (fs.isOpened())
     {
         fs << "app" << "{";
@@ -61,6 +68,8 @@ bool Settings::Write(const std::string& rs) const
         fs << "}";
 
         fs << "loop" << "{";
+        fs << "ext_on_ct" << loop.ext_on_ct;
+        fs << "min_level" << loop.min_level;
         fs << "max_level" << loop.max_level;
         fs << "inh_time" << loop.inh_time;
         fs << "norm_time" << loop.norm_time;
@@ -78,8 +87,10 @@ bool Settings::Write(const std::string& rs) const
 
         result = true;
     }
+    
     return result;
 }
+
 
 void Settings::ApplyDefaults(void)
 {
@@ -91,12 +102,14 @@ void Settings::ApplyDefaults(void)
     app.rec_path = "C:\\work\\movie";
     app.cascade_path = "C:\\opencv-3.2.0\\opencv\\build\\etc\\haarcascades\\";
 
-    loop.max_level = 10;
+    loop.ext_on_ct = 15;    // 1.5 seconds
+    loop.max_level = 4;     // level '5' in monitor
+    loop.max_level = 9;     // level '10' in monitor
     loop.inh_time = 5;
     loop.norm_time = 4;
     loop.warn_time = 3;
     loop.act_time = 5;
-    loop.smile_thr = 10;
+    loop.smile_thr = 10;    // arbitrary starting point, range 0-50, step 2
 
     phrase.wait_time = 10;
     phrase.rec_time = 25;

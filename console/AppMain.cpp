@@ -46,7 +46,7 @@ AppMain::AppMain() :
     s_current_phrase(""),
     n_z(0),
     is_com_blinky_on(false),
-    s_ack_level(S_COM_NO_ACK),
+    s_com_ack(S_COM_NO_ACK),
     zoom_ct(0), // 1x
     pan_ct(0),  // centered
     tilt_ct(0), // centered
@@ -154,14 +154,15 @@ void AppMain::update_com_status()
 {
     std::chrono::time_point<std::chrono::steady_clock> t_curr =
         std::chrono::high_resolution_clock::now();
-    double tx = std::chrono::duration<double>(t_curr - t_last_ack).count();
+    double t_elapsed =
+        std::chrono::duration<double>(t_curr - t_last_ack).count();
 
     // no COM activity in 2 seconds so turn off blinky
-    // and black the ack level string
-    if (tx > 2.0)
+    // and blank the ack level string
+    if (t_elapsed > 2.0)
     {
         is_com_blinky_on = false;
-        s_ack_level = S_COM_NO_ACK;
+        s_com_ack = S_COM_NO_ACK;
     }
 }
 
@@ -278,7 +279,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     putText(img_final, rsfps, Point(10, (hn * 3) + 14),
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
 
-    // COM status
+    // COM status, output level and blue blinky for link status
     Scalar com_color = (is_com_up) ? SCA_PURPLE : SCA_GRAY;
     rectangle(img_final, Rect(Point(0, hn * 4), Point(wn, hn * 5)),
         com_color, CV_FILLED);
@@ -286,7 +287,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         SCA_WHITE);
     rectangle(img_final, Rect(Point(4, (hn * 4) + 4), Point(4 + 12, (hn * 5) - 4)),
         is_com_blinky_on ? SCA_BLUE_GREEN : SCA_BLACK, CV_FILLED);
-    putText(img_final, s_ack_level, Point(24, hn * 4 + 14),
+    putText(img_final, s_com_ack, Point(24, hn * 4 + 14),
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
 
     // smile threshold
@@ -402,7 +403,11 @@ void AppMain::loop()
     const int zoom_step_w = (max_zoom_offset_w) / cfg.app.zoom_steps;
     const int zoom_step_h = (max_zoom_offset_h) / cfg.app.zoom_steps;
 
+    // initialize frames-per-second calculation
     reset_fps();
+
+    // reset level of external device when starting application
+    app_events.push(FSMEvent(FSMEventCode::E_COM_LEVEL, 0));
 
     while (is_looping)
     {

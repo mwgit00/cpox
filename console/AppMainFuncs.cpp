@@ -5,6 +5,9 @@
 
 #include "util.h"
 #include "AppMain.h"
+#include "COMTask.h"
+
+#define MAX_SMILE_THR   (50)
 
 
 void AppMain::UIBreak(void)
@@ -168,8 +171,8 @@ void AppMain::UITest2(void)
 
 void AppMain::UITest3(void)
 {
-    // set ext device minimum output level
-    app_events.push(FSMEvent(FSMEventCode::E_COM_LEVEL, 0));
+    // set ext device minimum output level (limited in configuration)
+    app_events.push(FSMEvent(FSMEventCode::E_COM_LEVEL, cfg.loop.min_level));
 }
 
 void AppMain::UITest4(void)
@@ -180,12 +183,14 @@ void AppMain::UITest4(void)
 
 void AppMain::UISmileU(void)
 {
+    // increase smile threshold by 2 units until max reached
     int& ri = cfg.loop.smile_thr;
-    ri = (ri < 50) ? ri + 2 : ri;
+    ri = (ri < MAX_SMILE_THR) ? ri + 2 : ri;
 }
 
 void AppMain::UISmileD(void)
 {
+    // decrease smile threshold by 2 units until 0 reached
     int& ri = cfg.loop.smile_thr;
     ri = (ri > 0) ? ri - 2 : ri;
 }
@@ -221,6 +226,7 @@ void AppMain::ActionComXON(const FSMEvent& r)
 
 void AppMain::ActionComXOFF(const FSMEvent& r)
 {
+    // can clear strike counter after external device is turned off
     external_action(false);
     s_strikes = "";
 }
@@ -246,24 +252,34 @@ void AppMain::ActionComAck(const FSMEvent& r)
     is_com_blinky_on = !is_com_blinky_on;
     if (r.Str().length() >= 3)
     {
-        // character at index 2 is level [a-y] or ?
+        // character at index 1 is command
+        // character at index 2 is output level [a-y] or ?
         // convert that to a string with the integer value
-        char c = r.Str().at(2);
-        if ((c >= 'a') && (c <= 'y'))
+        
+        char c_cmd = r.Str().at(1);
+        char c_val = r.Str().at(2);
+        
+        if (c_cmd == CMD_OUTPUT_ON)
         {
-            int n_ack_level = static_cast<int>(c - 'a') + 1;
+            // report when on
+            s_com_ack = S_COM_EXT_ON;
+        }
+        else if ((c_val >= CMD_VAL_MIN) && (c_val <= CMD_VAL_MAX))
+        {
+            // otherwise report level
+            int n_ack_level = static_cast<int>(c_val - CMD_VAL_MIN) + 1;
             std::ostringstream oss;
             oss << std::setw(2) << std::setfill(' ') << n_ack_level;
-            s_ack_level = oss.str();
+            s_com_ack = oss.str();
         }
         else
         {
-            s_ack_level = "?";
+            s_com_ack = S_COM_NO_ACK;
         }
     }
     else
     {
-        s_ack_level = S_COM_NO_ACK;
+        s_com_ack = S_COM_NO_ACK;
     }
 }
 
