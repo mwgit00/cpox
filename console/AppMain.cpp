@@ -227,9 +227,9 @@ void AppMain::show_help()
     std::cout << util::GetKeyHelpString(KEY_TILTU, IDS_HELP_KEY_TILTU) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_TILTD, IDS_HELP_KEY_TILTD) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_PT0, IDS_HELP_KEY_PT0) << std::endl;
-    std::cout << util::GetKeyHelpString(KEY_SAY, IDS_HELP_KEY_SAY) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_SMILEU, IDS_HELP_KEY_SMILEU) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_SMILED, IDS_HELP_KEY_SMILED) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_SAY, IDS_HELP_KEY_SAY) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_TTSREC, IDS_HELP_KEY_TTSREC) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_EXTON, IDS_HELP_KEY_EXTON) << std::endl;
     std::cout << "ESC - " << util::GetString(IDS_HELP_KEY_QUIT) << "." << std::endl;
