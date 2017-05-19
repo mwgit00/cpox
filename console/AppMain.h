@@ -17,6 +17,7 @@
 
 
 #define S_COM_NO_ACK    ("--")
+#define S_NO_STRIKES    ("---")
 #define S_COM_EXT_ON    ("ON")
 
 
@@ -48,6 +49,7 @@ public:
     void UIBreak(void);
     void UIEyes(void);
     void UIGrin(void);
+    void UIListen(void);
     void UITestSay(void);
     void UITestSpeechRec(void);
     void UIHelp(void);
@@ -99,8 +101,6 @@ private:
     // high level state info
 
     bool is_looping;
-    bool is_eyes_detect_enabled;
-    bool is_grin_detect_enabled;
     bool is_com_up;
     bool is_udp_rx_up;
     bool is_udp_tx_up;

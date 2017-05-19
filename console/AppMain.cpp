@@ -37,12 +37,10 @@ AppMain::AppMain() :
     cvsm(cfg.loop),
     psm(cfg.phrase),
     is_looping(true),
-    is_eyes_detect_enabled(true),
-    is_grin_detect_enabled(false),
     is_com_up(false),
     is_udp_rx_up(false),
     is_udp_tx_up(false),
-    s_strikes(""),
+    s_strikes(S_NO_STRIKES),
     s_current_phrase(""),
     n_z(0),
     is_com_blinky_on(false),
@@ -59,6 +57,7 @@ AppMain::AppMain() :
     ui_func_map[KEY_QUIT] = &AppMain::UIBreak;
     ui_func_map[KEY_EYES] = &AppMain::UIEyes;
     ui_func_map[KEY_GRIN] = &AppMain::UIGrin;
+    ui_func_map[KEY_LISTEN] = &AppMain::UIListen;
     ui_func_map[KEY_HELP] = &AppMain::UIHelp;
     ui_func_map[KEY_EXTON] = &AppMain::UITestExt;
     ui_func_map[KEY_VIDREC] = &AppMain::UIRecord;
@@ -245,7 +244,6 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     // draw face boxes
     Mat img_final = img;
     rFI.rgb_draw_boxes(img_final);
-    // FIXME std::cout << rFI.obj_grin.size() << std::endl;
 
     int wn = 54;  // width of status boxes
     int hn = 20;  // height of status boxes
@@ -257,43 +255,49 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     putText(img_final, s_label, Point(10, 14), FONT_HERSHEY_PLAIN, 1.0,
         SCA_WHITE, 2);
 
-    // mode state icon box
-    rectangle(img_final, Rect(Point(0, hn), Point(wn, hn * 2)), SCA_PURPLE, CV_FILLED);
-    rectangle(img_final, Rect(Point(0, hn), Point(wn, hn * 2)), SCA_WHITE);
-
-    // strike count display
-    Scalar speech_mode_color = psm.Snapshot().color;
-    rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)),
+    // listen-and-repeat mode state and strike count display
+    std::string s_srx = S_NO_STRIKES;
+    Scalar speech_mode_color = SCA_GRAY;
+    if (cfg.loop.listen_flag)
+    {
+        speech_mode_color = psm.Snapshot().color;
+        s_srx = s_strikes;
+    }
+    rectangle(img_final, Rect(Point(0, hn * 1), Point(wn, hn * 2)),
         speech_mode_color, CV_FILLED);
-    rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)),
+    rectangle(img_final, Rect(Point(0, hn * 1), Point(wn, hn * 2)),
         SCA_WHITE);
-    putText(img_final, s_strikes, Point(10, hn * 2 + 14),
+    putText(img_final, s_srx, Point(10, hn * 1 + 14),
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
+
+    // eye and smile mode state icon box
+    rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)), SCA_PURPLE, CV_FILLED);
+    rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)), SCA_WHITE);
+
+    // smile threshold
+    rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)), SCA_PURPLE, CV_FILLED);
+    rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)), SCA_WHITE);
+    rectangle(img_final, Rect(Point(2, (hn * 3) + 2), Point(cfg.loop.smile_thr + 2, (hn * 4) - 2)), SCA_YELLOW, CV_FILLED);
 
     // frames per second and recording status
     Scalar fps_color = (is_record_enabled) ? SCA_RED : SCA_BLACK;
-    rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)),
+    rectangle(img_final, Rect(Point(0, hn * 4), Point(wn, hn * 5)),
         fps_color, CV_FILLED);
-    rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)),
+    rectangle(img_final, Rect(Point(0, hn * 4), Point(wn, hn * 5)),
         SCA_WHITE);
-    putText(img_final, rsfps, Point(10, (hn * 3) + 14),
+    putText(img_final, rsfps, Point(10, (hn * 4) + 14),
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
 
     // COM status, output level and blue blinky for link status
     Scalar com_color = (is_com_up) ? SCA_PURPLE : SCA_GRAY;
-    rectangle(img_final, Rect(Point(0, hn * 4), Point(wn, hn * 5)),
+    rectangle(img_final, Rect(Point(0, hn * 5), Point(wn, hn * 6)),
         com_color, CV_FILLED);
-    rectangle(img_final, Rect(Point(0, hn * 4), Point(wn, hn * 5)),
+    rectangle(img_final, Rect(Point(0, hn * 5), Point(wn, hn * 6)),
         SCA_WHITE);
-    rectangle(img_final, Rect(Point(4, (hn * 4) + 4), Point(4 + 12, (hn * 5) - 4)),
+    rectangle(img_final, Rect(Point(4, (hn * 5) + 4), Point(4 + 12, (hn * 6) - 4)),
         is_com_blinky_on ? SCA_BLUE_GREEN : SCA_BLACK, CV_FILLED);
-    putText(img_final, s_com_ack, Point(24, hn * 4 + 14),
+    putText(img_final, s_com_ack, Point(24, hn * 5 + 14),
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
-
-    // smile threshold
-    rectangle(img_final, Rect(Point(0, hn * 5), Point(wn, hn * 6)), SCA_PURPLE, CV_FILLED);
-    rectangle(img_final, Rect(Point(0, hn * 5), Point(wn, hn * 6)), SCA_WHITE);
-    rectangle(img_final, Rect(Point(2, (hn * 5) + 2), Point(cfg.loop.smile_thr + 2, (hn * 6) - 2)), SCA_YELLOW, CV_FILLED);
 
     // draw speech recognition progress (timeout) bar if active
     // just a black rectangle that gets filled with gray blocks
@@ -314,14 +318,14 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     }
 
     // draw eye detection state indicator (pair of eyes)
-    Scalar sca_eyes = (is_eyes_detect_enabled) ? SCA_WHITE : SCA_GRAY;
+    Scalar sca_eyes = (cfg.loop.eyes_flag) ? SCA_WHITE : SCA_GRAY;
     {
-        int e_y = 28;
+        int e_y = (hn * 2) + 8;
         int e_x = 8;
         int e_dx = 8;
         circle(img_final, Point(e_x, e_y), 3, sca_eyes, CV_FILLED);
         circle(img_final, Point(e_x + e_dx, e_y), 3, sca_eyes, CV_FILLED);
-        if (is_eyes_detect_enabled)
+        if (cfg.loop.eyes_flag)
         {
             circle(img_final, Point(e_x, e_y), 1, SCA_BLACK, CV_FILLED);
             circle(img_final, Point(e_x + e_dx, e_y), 1, SCA_BLACK, CV_FILLED);
@@ -329,10 +333,10 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     }
 
     // draw grin detection state indicator (curve like a grin)
-    Scalar sca_grin = (is_grin_detect_enabled) ? SCA_WHITE : SCA_GRAY;
+    Scalar sca_grin = (cfg.loop.smile_flag) ? SCA_WHITE : SCA_GRAY;
     {
-        int g_x = 34;
-        int g_y = 28;
+        int g_x = 36;
+        int g_y = (hn * 2) + 8;
         ellipse(img_final, Point(g_x, g_y), Point(5, 3), 0, 0, 180,
             sca_grin, 2);
     }
@@ -436,8 +440,8 @@ void AppMain::loop()
         resize(img_zoom, img_viewer, viewer_size);
         cvtColor(img_viewer, img_gray, COLOR_BGR2GRAY);
 
-        face_info.is_eyes_detect_enabled = is_eyes_detect_enabled;
-        face_info.is_grin_detect_enabled = is_grin_detect_enabled;
+        face_info.is_eyes_detect_enabled = (cfg.loop.eyes_flag) ? true : false;
+        face_info.is_grin_detect_enabled = (cfg.loop.smile_flag) ? true : false;
         face_info.smile_thr = cfg.loop.smile_thr;
         bool b_found = cvx.detect(img_gray, face_info);
 

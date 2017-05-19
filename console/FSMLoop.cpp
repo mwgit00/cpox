@@ -140,7 +140,21 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
                 // announce countdown has started
                 
                 rq.push(FSMEvent(FSMEventCode::E_COM_LEVEL, external_output_level));
-                rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "get ready"));
+
+                if (rCfg.eyes_flag)
+                {
+                    rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "eyes forward"));
+                }
+
+                if (rCfg.smile_flag)
+                {
+                    rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "keep smiling"));
+                }
+
+                if (rCfg.listen_flag)
+                {
+                    rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "listen then repeat"));
+                }
             }
         }
     }
@@ -152,7 +166,8 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
             // reset speech rec. SM so it can be started again
             // announce start of monitoring
             rq.push(FSMEvent(FSMEventCode::E_SR_RESET));
-            rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "eyes forward and smile"));
+            rq.push(FSMEvent(FSMEventCode::E_SR_RESTART));
+            rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "session started"));
         }
     }
     else if (state == STATE_NORM)

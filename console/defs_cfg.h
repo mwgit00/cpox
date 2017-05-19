@@ -23,6 +23,9 @@ typedef struct
     int         warn_time;  ///< (sec) no face/eyes in this time, goes to ACT
     int         act_time;   ///< (sec) duration of ACT
     int         smile_thr;  ///< default smile threshold
+    int         eyes_flag;
+    int         smile_flag;
+    int         listen_flag;
 } tLoopCfg;
 
 typedef struct

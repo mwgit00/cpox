@@ -18,14 +18,29 @@ void AppMain::UIBreak(void)
 
 void AppMain::UIEyes(void)
 {
-    // toggle eye detection
-    is_eyes_detect_enabled = !is_eyes_detect_enabled;
+    if (cvsm.is_idle())
+    {
+        // toggle eye detection
+        cfg.loop.eyes_flag = (cfg.loop.eyes_flag) ? 0 : 1;
+    }
 }
 
 void AppMain::UIGrin(void)
 {
-    // toggle grin detection
-    is_grin_detect_enabled = !is_grin_detect_enabled;
+    if (cvsm.is_idle())
+    {
+        // toggle grin detection
+        cfg.loop.smile_flag = (cfg.loop.smile_flag) ? 0 : 1;
+    }
+}
+
+void AppMain::UIListen(void)
+{
+    if (cvsm.is_idle())
+    {
+        // toggle listen-and-repeat mode
+        cfg.loop.listen_flag = (cfg.loop.listen_flag) ? 0 : 1;
+    }
 }
 
 void AppMain::UITestSay(void)
@@ -216,7 +231,7 @@ void AppMain::ActionSRStrikes(const FSMEvent& r)
 {
     // update strike display string
     size_t n = r.Data();
-    s_strikes = std::string(n, 'X');
+    s_strikes = std::string(n, 'X') + std::string((3 - n), '-');
 }
 
 void AppMain::ActionComXON(const FSMEvent& r)
@@ -228,7 +243,7 @@ void AppMain::ActionComXOFF(const FSMEvent& r)
 {
     // can clear strike counter after external device is turned off
     external_action(false);
-    s_strikes = "";
+    s_strikes = S_NO_STRIKES;
 }
 
 void AppMain::ActionComLevel(const FSMEvent& r)

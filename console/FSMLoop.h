@@ -8,6 +8,11 @@
 #include "PolledTimer.h"
 #include "FSMPhrase.h"
 
+#define FSM_FLAG_EYES   (0x1u)
+#define FSM_FLAG_SMILE  (0x2u)
+#define FSM_FLAG_LISTEN (0x4u)
+
+
 class FSMLoop
 {
 public:
@@ -44,6 +49,8 @@ private:
     int external_output_level;  ///< zero-based output level
     PolledTimer cv_timer;
     FSMSnapShot snapshot;
+
+    uint32_t flags;
 };
 
 #endif // FSM_LOOP_H_

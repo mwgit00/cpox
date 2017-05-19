@@ -77,16 +77,10 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
 
     if (state == STATE_IDLE)
     {
-        // if key LISTEN then TO WAIT
-        if (this_event.Code() == FSMEventCode::E_KEY)
+        if (this_event.Code() == FSMEventCode::E_SR_RESTART)
         {
-            if (this_event.Data() == KEY_LISTEN)
-            {
-                // announce start of speech mode
-                _to_wait();
-                rq.push(FSMEvent(FSMEventCode::E_UDP_SAY,
-                    "listen and repeat"));
-            }
+            // enter wait state when commanded by main state machine
+            _to_wait();
         }
     }
     else if (state == STATE_WAIT)
@@ -104,7 +98,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
         if (this_event.Code() == FSMEventCode::E_TMR_SR)
         {
             // was speaking but timed out
-            // likely due to Speech Manager not started
+            // likely due to Speech Manager not started (or hung)
             _to_wait();
         }
         else if (this_event.Code() == FSMEventCode::E_UDP_TTS_OK)
@@ -120,7 +114,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
         if (this_event.Code() == FSMEventCode::E_TMR_SR)
         {
             // was recognizing but timed out
-            // likely due to REC process not started (or hung)
+            // likely due to Speech Manager not started (or hung)
             _to_wait();
         }
         else if (this_event.Code() == FSMEventCode::E_UDP_REC_VAL)
@@ -148,7 +142,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
         }
         else if (this_event.Code() == FSMEventCode::E_SR_RESET)
         {
-            // UI event will be needed to restart phrase listen-and-repeat
+            // loop will need to be restarted from GUI
             state = STATE_IDLE;
         }
     }
