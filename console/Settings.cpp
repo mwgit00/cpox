@@ -27,6 +27,7 @@ bool Settings::Read(const std::string& rs)
         app.com_port = n["com_port"];
         app.rec_path = n["rec_path"];
         app.cascade_path = n["cascade_path"];
+        app.img_scale_fac = n["img_scale_fac"];
 
         n = fs["loop"];
         loop.ext_on_ct = n["ext_on_ct"];
@@ -68,6 +69,7 @@ bool Settings::Write(const std::string& rs) const
         fs << "com_port" << app.com_port;
         fs << "rec_path" << app.rec_path;
         fs << "cascade_path" << app.cascade_path;
+        fs << "img_scale_fac" << app.img_scale_fac;
         fs << "}";
 
         fs << "loop" << "{";
@@ -106,7 +108,8 @@ void Settings::ApplyDefaults(void)
     app.zoom_max = 4;
     app.com_port = "COM2";
     app.rec_path = "C:\\work\\movie";
-    app.cascade_path = "C:\\opencv-3.2.0\\opencv\\build\\etc\\haarcascades\\";
+    app.cascade_path = "C:\\opencv-3.3.0\\opencv\\build\\etc\\haarcascades\\";
+    app.img_scale_fac = 0.5;
 
     loop.ext_on_ct = 15;    // 10hz counter for 1.5 seconds
     loop.min_level = 4;     // level '5' in monitor

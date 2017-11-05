@@ -393,7 +393,7 @@ void AppMain::loop()
 
     // determine size of image for console viewer
     // scale may need to change depending on camera
-    double img_scale = 0.5;
+    double img_scale = cfg.app.img_scale_fac;
     Size viewer_size = Size(
         static_cast<int>(capture_size.width * img_scale),
         static_cast<int>(capture_size.height * img_scale));

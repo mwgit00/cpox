@@ -11,6 +11,7 @@ typedef struct
     std::string     com_port;       ///< name of COM port
     std::string     rec_path;       ///< video frame recording path
     std::string     cascade_path;   ///< feature recognition cascade file path
+    double          img_scale_fac;  ///< scaling factor for camera image
 } tAppCfg;
 
 typedef struct
