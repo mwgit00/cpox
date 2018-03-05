@@ -12,9 +12,10 @@ using System.Collections.Concurrent;
 using System.Speech.Recognition;
 using System.Speech.Synthesis;
 using System.Threading;
+using System.Media;
 using System.Net;
 using System.Net.Sockets;
-
+using System.IO;
 
 
 namespace SpeechManager
@@ -41,14 +42,19 @@ namespace SpeechManager
 
         private bool is_last_cmd_done = true;
         private bool is_rec_tmr_running = false;
-        private int t_ct;
+        private bool is_wav_tmr_running = false;
+        private int t_ct = 0;
+        private int t_wav_ct = 0;
+        private int t_wav_ct_max = 0;
 
-        public SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
-        public SpeechSynthesizer synth = new SpeechSynthesizer();
-        public String phrase = "this is a test";
+        private SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
+        private SpeechSynthesizer synth = new SpeechSynthesizer();
+        private String phrase = "this is a test";
         private int word_ct = 0;
         private double rec_conf = 0.0;
         private bool is_rec_valid = false;
+
+        private SoundPlayer sounder = new SoundPlayer();
 
         public Form1()
         {
@@ -65,6 +71,11 @@ namespace SpeechManager
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            // set up sound player stuff
+
+            sounder.LoadCompleted +=
+                new AsyncCompletedEventHandler(snd_LoadCompleted);
+            
             // set up all the speech synthesis stuff
 
             synth.SelectVoiceByHints(VoiceGender.Female);
@@ -158,6 +169,23 @@ namespace SpeechManager
             textBoxStatus.BackColor = Color.LightBlue;
             textBoxPhrase.Text = phrase;
             textBoxUI.AppendText("Ready!" + Environment.NewLine);
+        }
+
+        void snd_LoadCompleted(object sender, AsyncCompletedEventArgs e)
+        {
+            if (sounder.IsLoadCompleted)
+            {
+                try
+                {
+                    this.sounder.Play();
+                    t_wav_ct = t_wav_ct_max;
+                    is_wav_tmr_running = true;
+                }
+                catch (Exception ex)
+                {
+                    textBoxUI.AppendText("Error playing sound:  " + ex.Message + Environment.NewLine);
+                }
+            }
         }
 
         void sre_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
@@ -418,6 +446,21 @@ namespace SpeechManager
                 }
             }
 
+            // handle wav player timeout
+            if (is_wav_tmr_running)
+            {
+                t_wav_ct--;
+                if (t_wav_ct <= 0)
+                {
+                    is_last_cmd_done = true;
+                    is_wav_tmr_running = false;
+                    buttonRecognize.Enabled = true;
+                    buttonSpeak.Enabled = true;
+                    labelIsSpeaking.BackColor = Color.Gray;
+                    theServer.SendMsg(s_tts_ack);
+                }
+            }
+
             // peek to see if there is a cancel command
             if (xmsgq.TryPeek(out s))
             {
@@ -436,15 +479,33 @@ namespace SpeechManager
             if (cmdFlag)
             {
                 String[] sarray = s.Split(' ');
+                int n_tokens = sarray.Length;
                 string firstElem = sarray.First();
                 string restOfArray = string.Join(" ", sarray.Skip(1));
 
                 if (firstElem == "say")
                 {
+                    bool is_wav_file = false;
                     if (restOfArray.Length > 0)
                     {
-                        // say whatever is RX'ed
-                        start_speaking(restOfArray);
+                        // this could be either a phrase or a WAV file name
+                        if (File.Exists(restOfArray))
+                        {
+                            if (Path.GetExtension(restOfArray) == ".wav")
+                            {
+                                is_wav_file = true;
+                            }
+                        }
+
+                        if (is_wav_file)
+                        {
+                            start_wav_player(restOfArray);
+                        }
+                        else
+                        {
+                            // say whatever is RX'ed
+                            start_speaking(restOfArray);
+                        }
                     }
                     else
                     {
@@ -493,6 +554,35 @@ namespace SpeechManager
             textBoxUI.Text = "";
         }
 
+        public void start_wav_player(String filepath)
+        {
+            // extract bit rate info from WAV header
+            // and calculate duration in milliseconds
+            byte[] TotalBytes = File.ReadAllBytes(filepath);
+            int bitrate = (BitConverter.ToInt32(new[] { TotalBytes[28], TotalBytes[29], TotalBytes[30], TotalBytes[31] }, 0) * 8);
+            double duration_ms = 1000.0 * ((TotalBytes.Length - 8) * 8) / ((double)bitrate);
+
+            int nticks = (int)((duration_ms / ((double)INTERVAL_MS)) + 0.5) + 1;
+            int nsecs = nticks * INTERVAL_MS;
+            t_wav_ct_max = nticks;
+            textBoxUI.AppendText(filepath + ":  " + nsecs.ToString() + "ms" + Environment.NewLine);
+
+            try
+            {
+                this.sounder.SoundLocation = filepath;
+                this.sounder.LoadAsync();
+
+                buttonRecognize.Enabled = false;
+                buttonSpeak.Enabled = false;
+                labelIsSpeaking.BackColor = Color.LightGreen;
+                is_last_cmd_done = false;
+            }
+            catch (Exception ex)
+            {
+                textBoxUI.AppendText("Error loading WAV file:  " + ex.Message + Environment.NewLine);
+            }
+        }
+
         public void start_recognition()
         {
             // clear done flag, rec done event will set it
@@ -518,8 +608,11 @@ namespace SpeechManager
 
         public void cancel_speech_actions()
         {
+            // cancel any recognition, TTS, or WAV in progress
+            // (setting WAV ct to 0 will force timeout)
             recognizer.RecognizeAsyncCancel();
             synth.SpeakAsyncCancelAll();
+            t_wav_ct = 0;
         }
     }
 }

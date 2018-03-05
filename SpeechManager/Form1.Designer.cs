@@ -129,7 +129,7 @@
             this.buttonSpeak.Name = "buttonSpeak";
             this.buttonSpeak.Size = new System.Drawing.Size(90, 31);
             this.buttonSpeak.TabIndex = 14;
-            this.buttonSpeak.Text = "Speak";
+            this.buttonSpeak.Text = "Say Text";
             this.buttonSpeak.UseVisualStyleBackColor = true;
             this.buttonSpeak.Click += new System.EventHandler(this.buttonSpeak_Click);
             // 
