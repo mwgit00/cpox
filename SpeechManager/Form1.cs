@@ -43,18 +43,20 @@ namespace SpeechManager
         private bool is_last_cmd_done = true;
         private bool is_rec_tmr_running = false;
         private bool is_wav_tmr_running = false;
+
         private int t_ct = 0;
         private int t_wav_ct = 0;
         private int t_wav_ct_max = 0;
 
         private SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
         private SpeechSynthesizer synth = new SpeechSynthesizer();
-        private String phrase = "this is a test";
+        private string phrase = "this is a test";
         private int word_ct = 0;
         private double rec_conf = 0.0;
         private bool is_rec_valid = false;
 
         private SoundPlayer sounder = new SoundPlayer();
+        private const string wavfile = "<none>";
 
         public Form1()
         {
@@ -161,6 +163,12 @@ namespace SpeechManager
 
             // set up GUI
 
+            cmStatus.Items.Clear();
+            cmStatus.Items.Add("Select All");
+            cmStatus.Items.Add("Copy");
+            cmStatus.Items.Add("Clear");
+            cmStatus.ItemClicked += new ToolStripItemClickedEventHandler(cmStatus_ItemClicked);
+
             timerEvent.Interval = INTERVAL_MS;
             timerEvent.Start();
 
@@ -168,6 +176,7 @@ namespace SpeechManager
             labelIsRecognizing.BackColor = Color.Gray;
             textBoxStatus.BackColor = Color.LightBlue;
             textBoxPhrase.Text = phrase;
+            textBoxWAV.Text = "<none>";
             textBoxUI.AppendText("Ready!" + Environment.NewLine);
         }
 
@@ -177,13 +186,15 @@ namespace SpeechManager
             {
                 try
                 {
+                    // begin playing WAV and set countdown timer
+                    // set state showing WAV is in progress
                     this.sounder.Play();
                     t_wav_ct = t_wav_ct_max;
                     is_wav_tmr_running = true;
                 }
                 catch (Exception ex)
                 {
-                    textBoxUI.AppendText("Error playing sound:  " + ex.Message + Environment.NewLine);
+                    textBoxUI.AppendText("Error playing WAV file:  " + ex.Message + Environment.NewLine);
                 }
             }
         }
@@ -290,7 +301,7 @@ namespace SpeechManager
             {
                 for (int k = word_ct; k < e.Result.Words.Count; k++)
                 {
-                    String sk = e.Result.Words[k].Text;
+                    string sk = e.Result.Words[k].Text;
                     float f = e.Result.Words[k].Confidence;
                     textBoxUI.AppendText(sk + "," + f.ToString() + "? ");
                 }
@@ -359,7 +370,7 @@ namespace SpeechManager
             }
         }
 
-        private void loadSinglePhraseGrammar(String newPhrase)
+        private void loadSinglePhraseGrammar(string newPhrase)
         {
             phrase = newPhrase;
             
@@ -478,34 +489,22 @@ namespace SpeechManager
             // if cmd found then execute
             if (cmdFlag)
             {
-                String[] sarray = s.Split(' ');
+                string[] sarray = s.Split(' ');
                 int n_tokens = sarray.Length;
                 string firstElem = sarray.First();
                 string restOfArray = string.Join(" ", sarray.Skip(1));
 
-                if (firstElem == "say")
+                if (firstElem == "wav")
                 {
-                    bool is_wav_file = false;
+                    textBoxWAV.Text = restOfArray;
+                    start_wav_player(restOfArray);
+                }
+                else if (firstElem == "say")
+                {
                     if (restOfArray.Length > 0)
                     {
-                        // this could be either a phrase or a WAV file name
-                        if (File.Exists(restOfArray))
-                        {
-                            if (Path.GetExtension(restOfArray) == ".wav")
-                            {
-                                is_wav_file = true;
-                            }
-                        }
-
-                        if (is_wav_file)
-                        {
-                            start_wav_player(restOfArray);
-                        }
-                        else
-                        {
-                            // say whatever is RX'ed
-                            start_speaking(restOfArray);
-                        }
+                        // say whatever is RX'ed
+                        start_speaking(restOfArray);
                     }
                     else
                     {
@@ -539,7 +538,7 @@ namespace SpeechManager
                     }
                     else
                     {
-                        textBoxUI.AppendText("Empty phrase." + Environment.NewLine);
+                        textBoxUI.AppendText("Empty 'load' command." + Environment.NewLine);
                     }
                 }
                 else
@@ -549,37 +548,48 @@ namespace SpeechManager
             }
         }
 
-        private void buttonClear_Click(object sender, EventArgs e)
+        public void start_wav_player(string filepath)
         {
-            textBoxUI.Text = "";
-        }
-
-        public void start_wav_player(String filepath)
-        {
-            // extract bit rate info from WAV header
-            // and calculate duration in milliseconds
-            byte[] TotalBytes = File.ReadAllBytes(filepath);
-            int bitrate = (BitConverter.ToInt32(new[] { TotalBytes[28], TotalBytes[29], TotalBytes[30], TotalBytes[31] }, 0) * 8);
-            double duration_ms = 1000.0 * ((TotalBytes.Length - 8) * 8) / ((double)bitrate);
-
-            int nticks = (int)((duration_ms / ((double)INTERVAL_MS)) + 0.5) + 1;
-            int nsecs = nticks * INTERVAL_MS;
-            t_wav_ct_max = nticks;
-            textBoxUI.AppendText(filepath + ":  " + nsecs.ToString() + "ms" + Environment.NewLine);
-
-            try
+            bool is_wav_file = false;
+            if (File.Exists(filepath))
             {
-                this.sounder.SoundLocation = filepath;
-                this.sounder.LoadAsync();
-
-                buttonRecognize.Enabled = false;
-                buttonSpeak.Enabled = false;
-                labelIsSpeaking.BackColor = Color.LightGreen;
-                is_last_cmd_done = false;
+                if (Path.GetExtension(filepath) == ".wav")
+                {
+                    is_wav_file = true;
+                }
             }
-            catch (Exception ex)
+
+            if (is_wav_file)
             {
-                textBoxUI.AppendText("Error loading WAV file:  " + ex.Message + Environment.NewLine);
+                // extract bit rate info directly from binary WAV header
+                // and calculate duration in milliseconds
+                byte[] TotalBytes = File.ReadAllBytes(filepath);
+                int bitrate = (BitConverter.ToInt32(new[] { TotalBytes[28], TotalBytes[29], TotalBytes[30], TotalBytes[31] }, 0) * 8);
+                double duration_ms = 1000.0 * ((TotalBytes.Length - 8) * 8) / ((double)bitrate);
+
+                int nticks = (int)((duration_ms / ((double)INTERVAL_MS)) + 0.5) + 1;
+                int nsecs = nticks * INTERVAL_MS;
+                t_wav_ct_max = nticks;
+                textBoxUI.AppendText(filepath + ":  " + nsecs.ToString() + "ms" + Environment.NewLine);
+
+                try
+                {
+                    this.sounder.SoundLocation = filepath;
+                    this.sounder.LoadAsync();
+
+                    buttonRecognize.Enabled = false;
+                    buttonSpeak.Enabled = false;
+                    labelIsSpeaking.BackColor = Color.LightGreen;
+                    is_last_cmd_done = false;
+                }
+                catch (Exception ex)
+                {
+                    textBoxUI.AppendText("Error loading WAV file:  " + ex.Message + Environment.NewLine);
+                }
+            }
+            else
+            {
+                textBoxUI.AppendText("Invalid WAV file:  " + filepath + Environment.NewLine);
             }
         }
 
@@ -622,9 +632,28 @@ namespace SpeechManager
 
         private void buttonOpenWAV_Click(object sender, EventArgs e)
         {
+            openFileDialog1.FileName = "";
+            openFileDialog1.Filter = "WAV files (*.wav)|*.wav";
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 textBoxWAV.Text = openFileDialog1.FileName;
+            }
+        }
+
+        void cmStatus_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            ToolStripItem item = e.ClickedItem;
+            if (item.Text == "Clear")
+            {
+                textBoxUI.Clear();
+            }
+            else if (item.Text == "Copy")
+            {
+                textBoxUI.Copy();
+            }
+            else if (item.Text == "Select All")
+            {
+                textBoxUI.SelectAll();
             }
         }
     }

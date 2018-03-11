@@ -44,7 +44,6 @@
             this.timerEvent = new System.Windows.Forms.Timer(this.components);
             this.labelIsSpeaking = new System.Windows.Forms.Label();
             this.labelIsRecognizing = new System.Windows.Forms.Label();
-            this.buttonClear = new System.Windows.Forms.Button();
             this.textBoxRecTimer = new System.Windows.Forms.TextBox();
             this.textBoxUI = new System.Windows.Forms.TextBox();
             this.labelIsServerOK = new System.Windows.Forms.Label();
@@ -57,6 +56,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.buttonOpenWAV = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            this.cmStatus = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownMinScore)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownRecTime)).BeginInit();
@@ -65,7 +65,7 @@
             // audioLevelBar
             // 
             this.audioLevelBar.Location = new System.Drawing.Point(62, 61);
-            this.audioLevelBar.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.audioLevelBar.Margin = new System.Windows.Forms.Padding(2);
             this.audioLevelBar.Name = "audioLevelBar";
             this.audioLevelBar.Size = new System.Drawing.Size(75, 18);
             this.audioLevelBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
@@ -74,7 +74,7 @@
             // buttonRecognize
             // 
             this.buttonRecognize.Location = new System.Drawing.Point(289, 40);
-            this.buttonRecognize.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonRecognize.Margin = new System.Windows.Forms.Padding(2);
             this.buttonRecognize.Name = "buttonRecognize";
             this.buttonRecognize.Size = new System.Drawing.Size(96, 25);
             this.buttonRecognize.TabIndex = 5;
@@ -86,7 +86,7 @@
             // 
             this.checkBoxShowAudioProblems.AutoSize = true;
             this.checkBoxShowAudioProblems.Location = new System.Drawing.Point(4, 17);
-            this.checkBoxShowAudioProblems.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkBoxShowAudioProblems.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxShowAudioProblems.Name = "checkBoxShowAudioProblems";
             this.checkBoxShowAudioProblems.Size = new System.Drawing.Size(129, 17);
             this.checkBoxShowAudioProblems.TabIndex = 6;
@@ -98,7 +98,7 @@
             // 
             this.checkBoxShowHypothesis.AutoSize = true;
             this.checkBoxShowHypothesis.Location = new System.Drawing.Point(4, 39);
-            this.checkBoxShowHypothesis.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkBoxShowHypothesis.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxShowHypothesis.Name = "checkBoxShowHypothesis";
             this.checkBoxShowHypothesis.Size = new System.Drawing.Size(108, 17);
             this.checkBoxShowHypothesis.TabIndex = 7;
@@ -109,7 +109,7 @@
             // 
             this.textBoxPhrase.Enabled = false;
             this.textBoxPhrase.Location = new System.Drawing.Point(48, 153);
-            this.textBoxPhrase.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.textBoxPhrase.Margin = new System.Windows.Forms.Padding(2);
             this.textBoxPhrase.Name = "textBoxPhrase";
             this.textBoxPhrase.Size = new System.Drawing.Size(350, 20);
             this.textBoxPhrase.TabIndex = 11;
@@ -117,7 +117,7 @@
             // textBoxStatus
             // 
             this.textBoxStatus.Location = new System.Drawing.Point(4, 61);
-            this.textBoxStatus.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.textBoxStatus.Margin = new System.Windows.Forms.Padding(2);
             this.textBoxStatus.Name = "textBoxStatus";
             this.textBoxStatus.ReadOnly = true;
             this.textBoxStatus.Size = new System.Drawing.Size(54, 20);
@@ -127,8 +127,8 @@
             // buttonCancel
             // 
             this.buttonCancel.Enabled = false;
-            this.buttonCancel.Location = new System.Drawing.Point(389, 12);
-            this.buttonCancel.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonCancel.Location = new System.Drawing.Point(389, 40);
+            this.buttonCancel.Margin = new System.Windows.Forms.Padding(2);
             this.buttonCancel.Name = "buttonCancel";
             this.buttonCancel.Size = new System.Drawing.Size(68, 25);
             this.buttonCancel.TabIndex = 13;
@@ -139,7 +139,7 @@
             // buttonSpeak
             // 
             this.buttonSpeak.Location = new System.Drawing.Point(289, 12);
-            this.buttonSpeak.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonSpeak.Margin = new System.Windows.Forms.Padding(2);
             this.buttonSpeak.Name = "buttonSpeak";
             this.buttonSpeak.Size = new System.Drawing.Size(46, 25);
             this.buttonSpeak.TabIndex = 14;
@@ -156,9 +156,9 @@
             this.groupBox1.Controls.Add(this.textBoxStatus);
             this.groupBox1.Controls.Add(this.audioLevelBar);
             this.groupBox1.Location = new System.Drawing.Point(9, 10);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(2);
             this.groupBox1.Size = new System.Drawing.Size(142, 110);
             this.groupBox1.TabIndex = 15;
             this.groupBox1.TabStop = false;
@@ -177,7 +177,7 @@
             // numericUpDownMinScore
             // 
             this.numericUpDownMinScore.Location = new System.Drawing.Point(6, 84);
-            this.numericUpDownMinScore.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.numericUpDownMinScore.Margin = new System.Windows.Forms.Padding(2);
             this.numericUpDownMinScore.Maximum = new decimal(new int[] {
             95,
             0,
@@ -202,7 +202,7 @@
             // 
             this.checkBoxEditPhrase.AutoSize = true;
             this.checkBoxEditPhrase.Location = new System.Drawing.Point(404, 155);
-            this.checkBoxEditPhrase.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkBoxEditPhrase.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxEditPhrase.Name = "checkBoxEditPhrase";
             this.checkBoxEditPhrase.Size = new System.Drawing.Size(44, 17);
             this.checkBoxEditPhrase.TabIndex = 16;
@@ -234,21 +234,10 @@
             this.labelIsRecognizing.Size = new System.Drawing.Size(16, 18);
             this.labelIsRecognizing.TabIndex = 19;
             // 
-            // buttonClear
-            // 
-            this.buttonClear.Location = new System.Drawing.Point(389, 40);
-            this.buttonClear.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.buttonClear.Name = "buttonClear";
-            this.buttonClear.Size = new System.Drawing.Size(68, 25);
-            this.buttonClear.TabIndex = 20;
-            this.buttonClear.Text = "Clear";
-            this.buttonClear.UseVisualStyleBackColor = true;
-            this.buttonClear.Click += new System.EventHandler(this.buttonClear_Click);
-            // 
             // textBoxRecTimer
             // 
             this.textBoxRecTimer.Location = new System.Drawing.Point(230, 43);
-            this.textBoxRecTimer.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.textBoxRecTimer.Margin = new System.Windows.Forms.Padding(2);
             this.textBoxRecTimer.Name = "textBoxRecTimer";
             this.textBoxRecTimer.ReadOnly = true;
             this.textBoxRecTimer.Size = new System.Drawing.Size(34, 20);
@@ -262,10 +251,11 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.textBoxUI.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
+            this.textBoxUI.ContextMenuStrip = this.cmStatus;
             this.textBoxUI.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBoxUI.ImeMode = System.Windows.Forms.ImeMode.Disable;
             this.textBoxUI.Location = new System.Drawing.Point(9, 177);
-            this.textBoxUI.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.textBoxUI.Margin = new System.Windows.Forms.Padding(2);
             this.textBoxUI.Multiline = true;
             this.textBoxUI.Name = "textBoxUI";
             this.textBoxUI.ReadOnly = true;
@@ -296,7 +286,7 @@
             // numericUpDownRecTime
             // 
             this.numericUpDownRecTime.Location = new System.Drawing.Point(172, 42);
-            this.numericUpDownRecTime.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.numericUpDownRecTime.Margin = new System.Windows.Forms.Padding(2);
             this.numericUpDownRecTime.Maximum = new decimal(new int[] {
             25,
             0,
@@ -378,6 +368,11 @@
             // 
             this.openFileDialog1.FileName = "openFileDialog1";
             // 
+            // cmStatus
+            // 
+            this.cmStatus.Name = "cmStatus";
+            this.cmStatus.Size = new System.Drawing.Size(61, 4);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -394,7 +389,6 @@
             this.Controls.Add(this.labelIsServerOK);
             this.Controls.Add(this.textBoxUI);
             this.Controls.Add(this.textBoxRecTimer);
-            this.Controls.Add(this.buttonClear);
             this.Controls.Add(this.labelIsRecognizing);
             this.Controls.Add(this.labelIsSpeaking);
             this.Controls.Add(this.checkBoxEditPhrase);
@@ -404,7 +398,7 @@
             this.Controls.Add(this.textBoxPhrase);
             this.Controls.Add(this.buttonRecognize);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.MaximumSize = new System.Drawing.Size(482, 640);
             this.MinimumSize = new System.Drawing.Size(482, 266);
             this.Name = "Form1";
@@ -434,7 +428,6 @@
         private System.Windows.Forms.Timer timerEvent;
         private System.Windows.Forms.Label labelIsSpeaking;
         private System.Windows.Forms.Label labelIsRecognizing;
-        private System.Windows.Forms.Button buttonClear;
         private System.Windows.Forms.TextBox textBoxRecTimer;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.NumericUpDown numericUpDownMinScore;
@@ -449,6 +442,7 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Button buttonOpenWAV;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
+        private System.Windows.Forms.ContextMenuStrip cmStatus;
     }
 }
 
