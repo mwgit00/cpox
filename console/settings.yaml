@@ -23,4 +23,4 @@ phrase:
    wait_time: 10
    rec_time: 25
    spk_time: 10
-   file_name: "phrases.txt"
+   file_name: "phrases.yaml"

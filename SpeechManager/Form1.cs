@@ -614,5 +614,18 @@ namespace SpeechManager
             synth.SpeakAsyncCancelAll();
             t_wav_ct = 0;
         }
+
+        private void buttonWAV_Click(object sender, EventArgs e)
+        {
+            start_wav_player(textBoxWAV.Text);
+        }
+
+        private void buttonOpenWAV_Click(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                textBoxWAV.Text = openFileDialog1.FileName;
+            }
+        }
     }
 }

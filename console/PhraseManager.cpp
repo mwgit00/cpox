@@ -1,9 +1,15 @@
 #include <fstream>
+#include <sstream>
+#include <iostream>
+#include <opencv2/core/core.hpp>
 #include "PhraseManager.h"
 
 
 
-PhraseManager::PhraseManager()
+PhraseManager::PhraseManager() :
+    default_phrase({ "this is a test", "" }),
+    phrases(),
+    next_phrase_index(0)
 {
 }
 
@@ -16,37 +22,44 @@ PhraseManager::~PhraseManager()
 bool PhraseManager::load(const std::string& rs)
 {
     bool result = false;
-    std::ifstream ifs;
-    ifs.open(rs);
 
-    if (ifs.is_open())
+    cv::FileStorage fs;
+    fs.open(rs, cv::FileStorage::READ);
+
+    if (fs.isOpened())
     {
-        std::string s;
-        while (std::getline(ifs, s))
+        cv::FileNode n;
+
+        n = fs["phrases"];
+        if (n.isSeq())
         {
-            if (s.length())
+            cv::FileNodeIterator iter;
+            for (iter = n.begin(); iter != n.end(); iter++)
             {
-                phrases.push_back(s);
+                cv::FileNode& rnn = *iter;
+                phrases.push_back(T_phrase_info({ rnn["text"], rnn["wav"] }));
+            }
+
+            // sanity check
+            result = true;
+            for (const auto& r : phrases)
+            {
+                if (!r.text.length())
+                {
+                    result = false;
+                    break;
+                }
             }
         }
-
-        ifs.close();
-
-        if (phrases.size())
-        {
-            next_phrase_index = 0;
-        }
-        
-        result = true;
     }
 
+    next_phrase_index = 0;
     return result;
 }
 
 
-std::string PhraseManager::next_phrase(void)
+const PhraseManager::T_phrase_info&  PhraseManager::next_phrase(void)
 {
-    std::string s;
     if (phrases.size())
     {
         int n = next_phrase_index;
@@ -62,12 +75,10 @@ std::string PhraseManager::next_phrase(void)
             next_phrase_index = (next_phrase_index + 1) % phrases.size();
         }
         
-        s = phrases[n];
+        return phrases[n];
     }
     else
     {
-        s = "this is a test";
+        return default_phrase;
     }
-
-    return s;
 }

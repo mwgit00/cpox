@@ -7,15 +7,24 @@
 class PhraseManager
 {
 public:
+
+    typedef struct _T_phrase_info
+    {
+        std::string text;
+        std::string wav;
+    } T_phrase_info;
+    
     PhraseManager();
     virtual ~PhraseManager();
 
     bool load(const std::string& rs);
-    std::string next_phrase(void);
+
+    const T_phrase_info& next_phrase(void);
 
 private:
     
-    std::vector<std::string> phrases;
+    T_phrase_info default_phrase;
+    std::vector<T_phrase_info> phrases;
     int next_phrase_index;
 };
 

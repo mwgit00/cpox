@@ -49,7 +49,8 @@ void AppMain::UITestSay(void)
     {
         // test retrieval and speaking of next phrase
         // it will be loaded into Speech Manager
-        s_current_phrase = phrase_mgr.next_phrase();
+        PhraseManager::T_phrase_info current_phrase = phrase_mgr.next_phrase();
+        s_current_phrase = current_phrase.text;
         std::cout << "SAY " << s_current_phrase << std::endl;
         udp_events.push(FSMEvent(FSMEventCode::E_UDP_LOAD, s_current_phrase));
         udp_events.push(FSMEvent(FSMEventCode::E_UDP_REPEAT));
@@ -216,7 +217,8 @@ void AppMain::ActionSRPhrase(const FSMEvent& r)
     // retrieve next phrase to be repeated
     // and issue commands to load it and repeat it
     // phrase is stashed for upcoming recognition step...
-    s_current_phrase = phrase_mgr.next_phrase();
+    PhraseManager::T_phrase_info current_phrase = phrase_mgr.next_phrase();
+    s_current_phrase = current_phrase.text;
     udp_events.push(FSMEvent(FSMEventCode::E_UDP_LOAD, s_current_phrase));
     udp_events.push(FSMEvent(FSMEventCode::E_UDP_REPEAT));
 }
