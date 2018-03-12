@@ -44,7 +44,7 @@ namespace SpeechManager
         private bool is_rec_tmr_running = false;
         private bool is_wav_tmr_running = false;
 
-        private int t_ct = 0;
+        private int t_rec_ct = 0;
         private int t_wav_ct = 0;
         private int t_wav_ct_max = 0;
 
@@ -56,7 +56,6 @@ namespace SpeechManager
         private bool is_rec_valid = false;
 
         private SoundPlayer sounder = new SoundPlayer();
-        private const string wavfile = "<none>";
 
         public Form1()
         {
@@ -176,7 +175,6 @@ namespace SpeechManager
             labelIsRecognizing.BackColor = Color.Gray;
             textBoxStatus.BackColor = Color.LightBlue;
             textBoxPhrase.Text = phrase;
-            textBoxWAV.Text = "<none>";
             textBoxUI.AppendText("Ready!" + Environment.NewLine);
         }
 
@@ -440,13 +438,18 @@ namespace SpeechManager
             else
             {
                 labelIsServerOK.BackColor = Color.Red;
+                if (theServer.error_message.Length > 0)
+                {
+                    textBoxUI.AppendText(theServer.error_message + Environment.NewLine);
+                    theServer.error_message = "";
+                }
             }
 
             // handle recognition timeout
             if (is_rec_tmr_running)
             {
-                t_ct += INTERVAL_MS;
-                int x = t_ct / 1000;
+                t_rec_ct += INTERVAL_MS;
+                int x = t_rec_ct / 1000;
                 int t_left = rec_time_sec - x;
                 textBoxRecTimer.Text = t_left.ToString();
                 if (t_left == 0)
@@ -497,6 +500,7 @@ namespace SpeechManager
                 if (firstElem == "wav")
                 {
                     textBoxWAV.Text = restOfArray;
+                    buttonWAV.Enabled = true;
                     start_wav_player(restOfArray);
                 }
                 else if (firstElem == "say")
@@ -600,7 +604,7 @@ namespace SpeechManager
             is_rec_tmr_running = true;
             is_rec_valid = false;
             word_ct = 0;
-            t_ct = 0;
+            t_rec_ct = 0;
             rec_time_sec = Decimal.ToInt32(numericUpDownRecTime.Value);
             textBoxRecTimer.Text = rec_time_sec.ToString();
             textBoxStatus.BackColor = Color.LightGreen;
@@ -637,6 +641,7 @@ namespace SpeechManager
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 textBoxWAV.Text = openFileDialog1.FileName;
+                buttonWAV.Enabled = true;
             }
         }
 

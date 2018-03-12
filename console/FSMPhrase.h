@@ -24,7 +24,10 @@ public:
     FSMPhrase(tPhraseCfg& r);
     virtual ~FSMPhrase();
 
+    void set_enabled(const bool f) { is_enabled = f; }
+
     bool is_idle() const;
+    bool is_stopped() const;
 
     void check_timers(tEventQueue& rq);
     void crank(const FSMEvent& this_event, tEventQueue& rq);
@@ -38,6 +41,7 @@ private:
 
     tPhraseCfg& rCfg;
     
+    bool is_enabled;
     int state;
     int strikes;
     PolledTimer sr_timer;

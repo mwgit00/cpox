@@ -3,7 +3,8 @@
 
 FSMPhrase::FSMPhrase(tPhraseCfg& r) :
     rCfg(r),
-    state(STATE_STOP),
+    is_enabled(false),
+    state(STATE_IDLE),
     strikes(0)
 {
     snapshot.color = SCA_BLACK;
@@ -18,6 +19,12 @@ FSMPhrase::~FSMPhrase()
 bool FSMPhrase::is_idle() const
 {
     return (state == STATE_IDLE);
+}
+
+
+bool FSMPhrase::is_stopped() const
+{
+    return (state == STATE_STOP);
 }
 
 
@@ -61,6 +68,7 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
     // if in any state other than idle and STOP occurs
     // - reset strikes
     // - stop timer
+    // - send cancel to Speech Manager
     // - enter STOP state
     if (state != STATE_IDLE)
     {
@@ -79,8 +87,12 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
     {
         if (this_event.Code() == FSMEventCode::E_SR_RESTART)
         {
+            // if listen-and-repeat mode is enabled then
             // enter wait state when commanded by main state machine
-            _to_wait();
+            if (is_enabled)
+            {
+                _to_wait();
+            }
         }
     }
     else if (state == STATE_WAIT)

@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.audioLevelBar = new System.Windows.Forms.ProgressBar();
             this.buttonRecognize = new System.Windows.Forms.Button();
             this.checkBoxShowAudioProblems = new System.Windows.Forms.CheckBox();
@@ -46,6 +47,7 @@
             this.labelIsRecognizing = new System.Windows.Forms.Label();
             this.textBoxRecTimer = new System.Windows.Forms.TextBox();
             this.textBoxUI = new System.Windows.Forms.TextBox();
+            this.cmStatus = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.labelIsServerOK = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.numericUpDownRecTime = new System.Windows.Forms.NumericUpDown();
@@ -56,7 +58,6 @@
             this.label5 = new System.Windows.Forms.Label();
             this.buttonOpenWAV = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
-            this.cmStatus = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownMinScore)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownRecTime)).BeginInit();
@@ -263,6 +264,11 @@
             this.textBoxUI.Size = new System.Drawing.Size(448, 321);
             this.textBoxUI.TabIndex = 0;
             // 
+            // cmStatus
+            // 
+            this.cmStatus.Name = "cmStatus";
+            this.cmStatus.Size = new System.Drawing.Size(61, 4);
+            // 
             // labelIsServerOK
             // 
             this.labelIsServerOK.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
@@ -319,6 +325,7 @@
             // 
             // buttonWAV
             // 
+            this.buttonWAV.Enabled = false;
             this.buttonWAV.Location = new System.Drawing.Point(340, 12);
             this.buttonWAV.Name = "buttonWAV";
             this.buttonWAV.Size = new System.Drawing.Size(46, 25);
@@ -360,18 +367,13 @@
             this.buttonOpenWAV.Name = "buttonOpenWAV";
             this.buttonOpenWAV.Size = new System.Drawing.Size(53, 23);
             this.buttonOpenWAV.TabIndex = 29;
-            this.buttonOpenWAV.Text = "Open";
+            this.buttonOpenWAV.Text = "Select";
             this.buttonOpenWAV.UseVisualStyleBackColor = true;
             this.buttonOpenWAV.Click += new System.EventHandler(this.buttonOpenWAV_Click);
             // 
             // openFileDialog1
             // 
             this.openFileDialog1.FileName = "openFileDialog1";
-            // 
-            // cmStatus
-            // 
-            this.cmStatus.Name = "cmStatus";
-            this.cmStatus.Size = new System.Drawing.Size(61, 4);
             // 
             // Form1
             // 
@@ -398,6 +400,7 @@
             this.Controls.Add(this.textBoxPhrase);
             this.Controls.Add(this.buttonRecognize);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(2);
             this.MaximumSize = new System.Drawing.Size(482, 640);
             this.MinimumSize = new System.Drawing.Size(482, 266);

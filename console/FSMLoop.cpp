@@ -109,14 +109,17 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
                 external_output_level = rCfg.min_level;
                 state = STATE_IDLE;
 
-                // turn off phrase state machine
+                // stop phrase state machine
+                // reset phrase machine to put it back into idle state
                 // turn off any external action
                 // set levels back to minimum
                 // announce halt
                 
                 rq.push(FSMEvent(FSMEventCode::E_SR_STOP));
+                rq.push(FSMEvent(FSMEventCode::E_SR_RESET));
                 rq.push(FSMEvent(FSMEventCode::E_COM_XOFF));
                 rq.push(FSMEvent(FSMEventCode::E_COM_LEVEL, external_output_level));
+                rq.push(FSMEvent(FSMEventCode::E_UDP_CANCEL));
                 rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "session halted"));
                 
                 ///////
@@ -153,7 +156,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
 
                 if (rCfg.listen_flag)
                 {
-                    rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "listen then repeat"));
+                    rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "listen and repeat"));
                 }
             }
         }

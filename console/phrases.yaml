@@ -1,6 +1,8 @@
 %YAML:1.0
 ---
 phrases:
+  - text: "this is a test"
+    wav: "C:\\work\\this_is_a_test.wav"
   - text: "chicken soup"
     wav: ""
   - text: "it's a lovely day"

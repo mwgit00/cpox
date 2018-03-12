@@ -40,6 +40,7 @@ void AppMain::UIListen(void)
     {
         // toggle listen-and-repeat mode
         cfg.loop.listen_flag = (cfg.loop.listen_flag) ? 0 : 1;
+        psm.set_enabled(cfg.loop.listen_flag ? true : false);
     }
 }
 
@@ -49,11 +50,22 @@ void AppMain::UITestSay(void)
     {
         // test retrieval and speaking of next phrase
         // it will be loaded into Speech Manager
+        // the Speech Manager will do TTS or play associated WAV file if it exists
+        
         PhraseManager::T_phrase_info current_phrase = phrase_mgr.next_phrase();
         s_current_phrase = current_phrase.text;
-        std::cout << "SAY " << s_current_phrase << std::endl;
+
         udp_events.push(FSMEvent(FSMEventCode::E_UDP_LOAD, s_current_phrase));
-        udp_events.push(FSMEvent(FSMEventCode::E_UDP_REPEAT));
+        if (!current_phrase.wav.empty())
+        {
+            std::cout << "WAV " << current_phrase.wav << std::endl;
+            udp_events.push(FSMEvent(FSMEventCode::E_UDP_WAV, current_phrase.wav));
+        }
+        else
+        {
+            std::cout << "TTS " << s_current_phrase << std::endl;
+            udp_events.push(FSMEvent(FSMEventCode::E_UDP_REPEAT));
+        }
     }
 }
 
@@ -217,10 +229,20 @@ void AppMain::ActionSRPhrase(const FSMEvent& r)
     // retrieve next phrase to be repeated
     // and issue commands to load it and repeat it
     // phrase is stashed for upcoming recognition step...
+
     PhraseManager::T_phrase_info current_phrase = phrase_mgr.next_phrase();
     s_current_phrase = current_phrase.text;
+
     udp_events.push(FSMEvent(FSMEventCode::E_UDP_LOAD, s_current_phrase));
-    udp_events.push(FSMEvent(FSMEventCode::E_UDP_REPEAT));
+    if (!current_phrase.wav.empty())
+    {
+        udp_events.push(FSMEvent(FSMEventCode::E_UDP_WAV, current_phrase.wav));
+    }
+    else
+    {
+        udp_events.push(FSMEvent(FSMEventCode::E_UDP_REPEAT));
+    }
+
 }
 
 void AppMain::ActionSRRec(const FSMEvent& r)
@@ -334,7 +356,7 @@ void AppMain::ActionUDPSay(const FSMEvent& r)
 void AppMain::ActionUDPRecVal(const FSMEvent& r)
 {
     // this is just for testing in the app
-    if (psm.is_idle())
+    if (psm.is_idle() || psm.is_stopped())
     {
         std::cout << "REC " << r.Data() << std::endl;
     }

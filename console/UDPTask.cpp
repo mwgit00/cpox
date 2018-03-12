@@ -213,6 +213,11 @@ void UDPTask::tx_loop(void)
                     s = "say " + x.Str();
                     break;
                 }
+                case FSMEventCode::E_UDP_WAV:
+                {
+                    s = "wav " + x.Str();
+                    break;
+                }
                 case FSMEventCode::E_UDP_LOAD:
                 {
                     s = "load " + x.Str();
@@ -226,6 +231,11 @@ void UDPTask::tx_loop(void)
                 case FSMEventCode::E_UDP_REC:
                 {
                     s = "rec";
+                    break;
+                }
+                case FSMEventCode::E_UDP_CANCEL:
+                {
+                    s = "cancel";
                     break;
                 }
                 default:

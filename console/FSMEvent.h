@@ -39,6 +39,8 @@ enum class FSMEventCode : uint32_t
     E_UDP_REC =     0x84u,  ///< UDP task command to recognize loaded phrase
     E_UDP_TTS_OK =  0x85u,  ///< UDP task finished speaking phrase
     E_UDP_REC_VAL = 0x86u,  ///< UDP task recognition result value
+    E_UDP_WAV =     0x87u,  ///< UDP task command to play WAV file
+    E_UDP_CANCEL =  0x88u,  ///< UDP task command to cancel current operation
     E_TASK_HALT =   0xF0u,  ///< tell worker task to terminate
 };
 

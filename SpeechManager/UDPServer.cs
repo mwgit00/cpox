@@ -21,6 +21,7 @@ namespace SpeechManager
     public class UDPServer
     {
         public event UDPReceiveEventDelegate UDPReceiveHappened;
+        public string error_message = "";
 
         private volatile bool is_stop_requested = false;
         private volatile bool is_socket_error = false;
@@ -106,6 +107,7 @@ namespace SpeechManager
                 {
                     if (ex.ErrorCode != (int) SocketError.TimedOut)
                     {
+                        error_message = ex.Message;
                         is_socket_error = true;
                     }
                 }
