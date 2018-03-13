@@ -139,8 +139,8 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
                 external_output_level = rCfg.min_level;
                 state = STATE_INH;
                 
-                // set levels back to minimum
-                // announce countdown has started
+                // be sure levels are set back to minimum
+                // announce mode information to user
                 
                 rq.push(FSMEvent(FSMEventCode::E_COM_LEVEL, external_output_level));
 
@@ -166,7 +166,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
         if (this_event.Code() == FSMEventCode::E_TMR_CV)
         {
             _to_norm();
-            // reset speech rec. SM so it can be started again
+            // reset speech rec. SM so it can be restarted
             // announce start of monitoring
             rq.push(FSMEvent(FSMEventCode::E_SR_RESET));
             rq.push(FSMEvent(FSMEventCode::E_SR_RESTART));

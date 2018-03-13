@@ -68,8 +68,8 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
     // if in any state other than idle and STOP occurs
     // - reset strikes
     // - stop timer
-    // - send cancel to Speech Manager
     // - enter STOP state
+    // - send cancel to Speech Manager
     if (state != STATE_IDLE)
     {
         if (this_event.Code() == FSMEventCode::E_SR_STOP)
@@ -110,6 +110,22 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
         if (this_event.Code() == FSMEventCode::E_TMR_SR)
         {
             // was speaking but timed out
+            // likely due to Speech Manager not started (or hung)
+            _to_wait();
+        }
+        else if (this_event.Code() == FSMEventCode::E_UDP_TTS_OK)
+        {
+            // begin boop (should get feedback before 1 second)
+            sr_timer.start(1);
+            state = STATE_BOOP;
+            rq.push(FSMEvent(FSMEventCode::E_UDP_WAV, "c:\\work\\boop.wav"));
+        }
+    }
+    else if (state == STATE_BOOP)
+    {
+        if (this_event.Code() == FSMEventCode::E_TMR_SR)
+        {
+            // was booping but timed out
             // likely due to Speech Manager not started (or hung)
             _to_wait();
         }

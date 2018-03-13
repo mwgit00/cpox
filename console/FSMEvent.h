@@ -23,6 +23,7 @@ enum class FSMEventCode : uint32_t
     E_SR_PHRASE =   0x15u,  ///< say phrase to be repeated and recognized
     E_SR_RESULT =   0x16u,  ///< speech rec. returned pass-fail result
     E_SR_RESET =    0x17u,  ///< speech rec. back to idle
+    E_SR_CANCEL =   0x18u,  ///< speech rec. cancel any pending operations
     E_TTS_UP =      0x20u,  ///< TTS task initialized successfully
     E_TTS_IDLE =    0x22u,  ///< TTS task has finished speaking a phrase
     E_COM_UP =      0x40u,  ///< COM task initialized successfully
@@ -32,13 +33,13 @@ enum class FSMEventCode : uint32_t
     E_COM_LEVEL =   0x44u,  ///< COM external action level adjustment
     E_COM_LEVEL_1 = 0x45u,  ///< COM external action (output 1) level adjustment
     E_COM_LEVEL_2 = 0x46u,  ///< COM external action (output 2) level adjustment
-    E_UDP_UP =      0x80u,  ///< UDP task initialized successfully
+    E_UDP_UP =      0x80u,  ///< UDP server link initialized successfully
     E_UDP_SAY =     0x81u,  ///< UDP task command to say phrase
     E_UDP_LOAD =    0x82u,  ///< UDP task command to load phrase
     E_UDP_REPEAT =  0x83u,  ///< UDP task command to repeat loaded phrase
     E_UDP_REC =     0x84u,  ///< UDP task command to recognize loaded phrase
-    E_UDP_TTS_OK =  0x85u,  ///< UDP task finished speaking phrase
-    E_UDP_REC_VAL = 0x86u,  ///< UDP task recognition result value
+    E_UDP_TTS_OK =  0x85u,  ///< UDP received msg for completion of phrase / WAV
+    E_UDP_REC_VAL = 0x86u,  ///< UDP received msg with recognition result value
     E_UDP_WAV =     0x87u,  ///< UDP task command to play WAV file
     E_UDP_CANCEL =  0x88u,  ///< UDP task command to cancel current operation
     E_TASK_HALT =   0xF0u,  ///< tell worker task to terminate

@@ -438,10 +438,19 @@ namespace SpeechManager
             else
             {
                 labelIsServerOK.BackColor = Color.Red;
-                if (theServer.error_message.Length > 0)
+
+                if (theServer.error_message_rx.Length > 0)
                 {
-                    textBoxUI.AppendText(theServer.error_message + Environment.NewLine);
-                    theServer.error_message = "";
+                    // show RX error message once then clear it so it doesn't keep getting printed
+                    textBoxUI.AppendText(theServer.error_message_rx + Environment.NewLine);
+                    theServer.error_message_rx = "";
+                }
+
+                if (theServer.error_message_tx.Length > 0)
+                {
+                    // show TX error message once then clear it so it doesn't keep getting printed
+                    textBoxUI.AppendText(theServer.error_message_tx + Environment.NewLine);
+                    theServer.error_message_tx = "";
                 }
             }
 
@@ -517,6 +526,7 @@ namespace SpeechManager
                 }
                 else if (firstElem == "cancel")
                 {
+                    textBoxUI.AppendText("Cancel!" + Environment.NewLine);
                     cancel_speech_actions();
                 }
                 else if (firstElem == "repeat")
@@ -574,7 +584,7 @@ namespace SpeechManager
                 int nticks = (int)((duration_ms / ((double)INTERVAL_MS)) + 0.5) + 1;
                 int nsecs = nticks * INTERVAL_MS;
                 t_wav_ct_max = nticks;
-                textBoxUI.AppendText(filepath + ":  " + nsecs.ToString() + "ms" + Environment.NewLine);
+                // textBoxUI.AppendText(filepath + ":  " + nsecs.ToString() + "ms" + Environment.NewLine);
 
                 try
                 {

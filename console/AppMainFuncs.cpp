@@ -74,7 +74,7 @@ void AppMain::UITestSpeechRec(void)
     if (cvsm.is_idle())
     {
         // test recognition of last loaded phrase
-        std::cout << "REC " << s_current_phrase << std::endl;
+        std::cout << "REC PHRASE { " << s_current_phrase << " }" << std::endl;
         udp_events.push(FSMEvent(FSMEventCode::E_UDP_REC));
     }
 }
@@ -258,6 +258,12 @@ void AppMain::ActionSRStrikes(const FSMEvent& r)
     s_strikes = std::string(n, 'X') + std::string((3 - n), '-');
 }
 
+void AppMain::ActionSRCancel(const FSMEvent& r)
+{
+    // issue command to cancel any pending operation and flush queue
+    udp_events.push(FSMEvent(FSMEventCode::E_UDP_CANCEL));
+}
+
 void AppMain::ActionComXON(const FSMEvent& r)
 {
     external_action(true, r.Data());
@@ -347,17 +353,17 @@ void AppMain::ActionUDPUp(const FSMEvent& r)
     std::cout << util::GetString(ids) << std::endl;
 }
 
-void AppMain::ActionUDPSay(const FSMEvent& r)
+void AppMain::ActionUDPTxCmd(const FSMEvent& r)
 {
-    // pass event to UDP task
+    // pass event (command) to UDP task
     udp_events.push(r);
 }
 
-void AppMain::ActionUDPRecVal(const FSMEvent& r)
+void AppMain::ActionUDPRxRecVal(const FSMEvent& r)
 {
     // this is just for testing in the app
-    if (psm.is_idle() || psm.is_stopped())
+    if (psm.is_idle())
     {
-        std::cout << "REC " << r.Data() << std::endl;
+        std::cout << "REC RESULT = " << r.Data() << std::endl;
     }
 }

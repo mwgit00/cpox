@@ -16,8 +16,9 @@ public:
         STATE_IDLE = 0,
         STATE_WAIT = 1,
         STATE_SPEAKING = 2,
-        STATE_RECOGNIZING = 3,
-        STATE_STOP = 4,
+        STATE_BOOP = 3,
+        STATE_RECOGNIZING = 4,
+        STATE_STOP = 5,
     };
 
     FSMPhrase() = delete;

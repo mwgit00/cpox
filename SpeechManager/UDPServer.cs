@@ -21,7 +21,10 @@ namespace SpeechManager
     public class UDPServer
     {
         public event UDPReceiveEventDelegate UDPReceiveHappened;
-        public string error_message = "";
+
+        // these should probably be made thread safe somehow
+        public string error_message_rx = "";
+        public string error_message_tx = "";
 
         private volatile bool is_stop_requested = false;
         private volatile bool is_socket_error = false;
@@ -105,9 +108,11 @@ namespace SpeechManager
                 }
                 catch (SocketException ex)
                 {
-                    if (ex.ErrorCode != (int) SocketError.TimedOut)
+                    // can igonore timeout and the bogus Windows UDP connection reset error
+                    if ((ex.ErrorCode != (int) SocketError.TimedOut) &&
+                        (ex.ErrorCode != (int) SocketError.ConnectionReset))
                     {
-                        error_message = ex.Message;
+                        error_message_rx = "RX " + ex.Message + " " + ex.ErrorCode.ToString();
                         is_socket_error = true;
                     }
                 }
@@ -140,7 +145,18 @@ namespace SpeechManager
                 if (is_ok && is_first_rx_ok)
                 {
                     byte[] buffer = Encoding.ASCII.GetBytes(s);
-                    udpTxClient.Send(buffer, buffer.Length, txEP);
+                    try
+                    {
+                        udpTxClient.Send(buffer, buffer.Length, txEP);
+                    }
+                    catch (SocketException ex)
+                    {
+                        if (ex.ErrorCode != (int)SocketError.TimedOut)
+                        {
+                            error_message_tx = "TX " + ex.Message + " " + ex.ErrorCode.ToString();
+                            is_socket_error = true;
+                        }
+                    }
                 }
 
                 Thread.Sleep(20);

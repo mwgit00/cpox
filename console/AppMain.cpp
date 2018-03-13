@@ -82,14 +82,19 @@ AppMain::AppMain() :
     action_func_map[FSMEventCode::E_SR_PHRASE] = &AppMain::ActionSRPhrase;
     action_func_map[FSMEventCode::E_SR_REC] = &AppMain::ActionSRRec;
     action_func_map[FSMEventCode::E_SR_STRIKES] = &AppMain::ActionSRStrikes;
+    action_func_map[FSMEventCode::E_SR_CANCEL] = &AppMain::ActionSRCancel;
+
     action_func_map[FSMEventCode::E_COM_XON] = &AppMain::ActionComXON;
     action_func_map[FSMEventCode::E_COM_XOFF] = &AppMain::ActionComXOFF;
     action_func_map[FSMEventCode::E_COM_LEVEL] = &AppMain::ActionComLevel;
     action_func_map[FSMEventCode::E_COM_UP] = &AppMain::ActionComUp;
     action_func_map[FSMEventCode::E_COM_ACK] = &AppMain::ActionComAck;
+
     action_func_map[FSMEventCode::E_UDP_UP] = &AppMain::ActionUDPUp;
-    action_func_map[FSMEventCode::E_UDP_SAY] = &AppMain::ActionUDPSay;
-    action_func_map[FSMEventCode::E_UDP_REC_VAL] = &AppMain::ActionUDPRecVal;
+    action_func_map[FSMEventCode::E_UDP_SAY] = &AppMain::ActionUDPTxCmd;
+    action_func_map[FSMEventCode::E_UDP_WAV] = &AppMain::ActionUDPTxCmd;
+    action_func_map[FSMEventCode::E_UDP_CANCEL] = &AppMain::ActionUDPTxCmd;
+    action_func_map[FSMEventCode::E_UDP_REC_VAL] = &AppMain::ActionUDPRxRecVal;
 
     // info for frame capture and recording
 
@@ -409,6 +414,9 @@ void AppMain::loop()
 
     // initialize frames-per-second calculation
     reset_fps();
+
+    // apply listen-and-repeat flag
+    psm.set_enabled(cfg.loop.listen_flag ? true : false);
 
     // reset level of external device when starting application
     app_events.push(FSMEvent(FSMEventCode::E_COM_LEVEL, 0));
