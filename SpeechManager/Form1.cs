@@ -175,7 +175,7 @@ namespace SpeechManager
             labelIsRecognizing.BackColor = Color.Gray;
             textBoxStatus.BackColor = Color.LightBlue;
             textBoxPhrase.Text = phrase;
-            textBoxUI.AppendText("Ready!" + Environment.NewLine);
+            textBoxUI.AppendText("Ready." + Environment.NewLine);
         }
 
         void snd_LoadCompleted(object sender, AsyncCompletedEventArgs e)
@@ -526,7 +526,7 @@ namespace SpeechManager
                 }
                 else if (firstElem == "cancel")
                 {
-                    textBoxUI.AppendText("Cancel!" + Environment.NewLine);
+                    // textBoxUI.AppendText("Cancel!" + Environment.NewLine);
                     cancel_speech_actions();
                 }
                 else if (firstElem == "repeat")
