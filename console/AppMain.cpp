@@ -282,7 +282,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     // smile threshold
     rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)), SCA_PURPLE, CV_FILLED);
     rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)), SCA_WHITE);
-    rectangle(img_final, Rect(Point(2, (hn * 3) + 2), Point(cfg.loop.smile_thr + 2, (hn * 4) - 2)), SCA_YELLOW, CV_FILLED);
+    rectangle(img_final, Rect(Point(2, (hn * 3) + 2), Point(cfg.loop.smile_thr + 2, (hn * 4) - 2)), SCA_BLUE_GREEN, CV_FILLED);
 
     // frames per second and recording status
     Scalar fps_color = (is_record_enabled) ? SCA_RED : SCA_BLACK;

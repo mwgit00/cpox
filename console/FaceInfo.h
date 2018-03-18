@@ -17,6 +17,9 @@ public:
     void apply_eyeR(const cv::Rect& rEye);
     void rgb_draw_boxes(cv::Mat& rImg) const;
 
+    std::vector<cv::Vec3f>& get_circlesL() { return circlesL; }
+    std::vector<cv::Vec3f>& get_circlesR() { return circlesR; }
+
 public:
 
     bool is_face_found;
@@ -46,11 +49,16 @@ public:
     cv::Rect rect_eyeL; ///< rectangle for found left eye
     cv::Rect rect_eyeR; ///< rectangle for found right eye
 
+    std::vector<cv::Vec3f> circlesL;
+    std::vector<cv::Vec3f> circlesR;
+
     std::vector<cv::Rect> obj_grin; ///< all grins that have been found
 
-    cv::Rect rect_eyeL_roi;	///< region-of-interest for left eye search
-    cv::Rect rect_eyeR_roi;	///< region-of-interest for right eye search
-    cv::Rect rect_grin_roi;	///< region-of-interest for grin search
+    cv::Rect rect_eyeL_roi;	    ///< region-of-interest for left eye search
+    cv::Rect rect_eyeR_roi;	    ///< region-of-interest for right eye search
+    cv::Rect rect_irisL_roi;	///< region-of-interest for left iris search
+    cv::Rect rect_irisR_roi;    ///< region-of-interest for right iris search
+    cv::Rect rect_grin_roi;	    ///< region-of-interest for grin search
 };
 
 #endif // FACE_INFO_H_

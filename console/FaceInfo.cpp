@@ -7,6 +7,9 @@
 // but they may need slight tweaks for other faces
 
 
+const int iris_roi_div = 3;
+
+
 FaceInfo::FaceInfo() :
     is_face_found(false),
     is_eyes_detect_enabled(true),
@@ -47,6 +50,8 @@ void FaceInfo::reset_results()
 
     rect_eyeL_roi = cv::Rect();
     rect_eyeR_roi = cv::Rect();
+    rect_irisL_roi = cv::Rect();
+    rect_irisR_roi = cv::Rect();
     rect_grin_roi = cv::Rect();
 }
 
@@ -96,6 +101,13 @@ void FaceInfo::apply_eyeL(const cv::Rect& rEye)
     rect_eyeL = rEye;
     rect_eyeL.x += x1;
     rect_eyeL.y += yeyes;
+
+    // search region for iris is a central box in the eye rectangle
+    int xoffset = rEye.width / iris_roi_div;
+    int yoffset = rEye.height / iris_roi_div;
+    rect_irisL_roi = cv::Rect(
+        cv::Point(rEye.x + xoffset, rEye.y + yoffset),
+        cv::Point(rEye.x + rEye.width - xoffset, rEye.y + rEye.height - yoffset));
 }
 
 
@@ -104,6 +116,13 @@ void FaceInfo::apply_eyeR(const cv::Rect& rEye)
     rect_eyeR = rEye;
     rect_eyeR.x += xhalf;
     rect_eyeR.y += yeyes;
+    
+    // search region for iris is a central box in the eye rectangle
+    int xoffset = rEye.width / iris_roi_div;
+    int yoffset = rEye.height / iris_roi_div;
+    rect_irisR_roi = cv::Rect(
+        cv::Point(rEye.x + xoffset, rEye.y + yoffset),
+        cv::Point(rEye.x + rEye.width - xoffset, rEye.y + rEye.height - yoffset));
 }
 
 
@@ -125,6 +144,26 @@ void FaceInfo::rgb_draw_boxes(cv::Mat& rImg) const
         {
             rectangle(rImg, rect_eyeL, SCA_GREEN);
             rectangle(rImg, rect_eyeR, SCA_GREEN);
+
+            if (circlesL.size())
+            {
+                int xoffset = rect_eyeL.width / iris_roi_div;
+                int yoffset = rect_eyeL.height / iris_roi_div;
+                cv::Vec3i c = circlesL[0];
+                cv::Point center = cv::Point(c[0] + rect_eyeL.x + xoffset, c[1] + rect_eyeL.y + yoffset);
+                int radius = c[2];
+                cv::circle(rImg, center, radius, cv::Scalar(255, 0, 255), 1, cv::LINE_AA);
+            }
+
+            if (circlesR.size())
+            {
+                int xoffset = rect_eyeR.width / iris_roi_div;
+                int yoffset = rect_eyeR.height / iris_roi_div;
+                cv::Vec3i c = circlesR[0];
+                cv::Point center = cv::Point(c[0] + rect_eyeR.x + xoffset, c[1] + rect_eyeR.y + yoffset);
+                int radius = c[2];
+                cv::circle(rImg, center, radius, cv::Scalar(255, 0, 255), 1, cv::LINE_AA);
+            }
         }
 
         cv::Scalar sca_face = SCA_CYAN;

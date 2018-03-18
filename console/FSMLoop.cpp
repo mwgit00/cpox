@@ -156,7 +156,7 @@ void FSMLoop::crank(const FSMEvent& this_event, tEventQueue& rq)
 
                 if (rCfg.listen_flag)
                 {
-                    rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "listen and repeat"));
+                    rq.push(FSMEvent(FSMEventCode::E_UDP_SAY, "always wait for the beep before you speak"));
                 }
             }
         }

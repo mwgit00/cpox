@@ -151,8 +151,19 @@ void FSMPhrase::crank(const FSMEvent& this_event, tEventQueue& rq)
             // then ack result with the number of strikes
             _to_wait();
 
-            // update strike count based on result code: 0-fail, 1-pass
-            strikes = (this_event.Data() == 0) ? strikes + 1 : 0;
+            // update strike count based on result code:  0-fail, 1-pass
+            // play annoying bomp WAV if fail or friendly beep WAV if pass
+            // FIXME -- make the file names configurable
+            if (this_event.Data() == 0)
+            {
+                strikes++;
+                rq.push(FSMEvent(FSMEventCode::E_UDP_WAV, "c:\\work\\bomp.wav"));
+            }
+            else
+            {
+                strikes = 0;
+                rq.push(FSMEvent(FSMEventCode::E_UDP_WAV, "c:\\work\\beep.wav"));
+            }
 
             rq.push(FSMEvent(FSMEventCode::E_SR_STRIKES, strikes));
             if (strikes == 3)

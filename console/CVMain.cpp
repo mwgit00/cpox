@@ -100,10 +100,19 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
                 static_cast<int>(eyeL_ROI.size().width * min_eyes_scale),
                 static_cast<int>(eyeL_ROI.size().width * min_eyes_scale));
 
+            int hcta = 20;
+            int hctb = 10;
+
             cc_eyes.detectMultiScale(eyeL_ROI, obj_eyeL, eyes_scale_factor, eye_neighbor_ct, 0, min_size_eyes);
             if (obj_eyeL.size() >= 1)
             {
                 rFaceInfo.apply_eyeL(obj_eyeL[0]);
+
+                // look for iris circle
+                Mat irisL = eyeL_ROI(rFaceInfo.rect_irisL_roi);
+                rFaceInfo.get_circlesL().clear();
+                HoughCircles(irisL, rFaceInfo.get_circlesL(), HOUGH_GRADIENT, 1, eyeL_ROI.rows / 16, hcta, hctb, eyeL_ROI.rows / 16, eyeL_ROI.rows / 8);
+
                 bFound = true;
             }
 
@@ -111,6 +120,12 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
             if (obj_eyeR.size() >= 1)
             {
                 rFaceInfo.apply_eyeR(obj_eyeR[0]);
+
+                // look for iris circle
+                Mat irisR = eyeR_ROI(rFaceInfo.rect_irisR_roi);
+                rFaceInfo.get_circlesR().clear();
+                HoughCircles(irisR, rFaceInfo.get_circlesR(), HOUGH_GRADIENT, 1, eyeR_ROI.rows / 16, hcta, hctb, eyeR_ROI.rows / 16, eyeR_ROI.rows / 8);
+
                 bFound = true;
             }
         }
