@@ -16,6 +16,7 @@ using System.Media;
 using System.Net;
 using System.Net.Sockets;
 using System.IO;
+using System.Globalization;
 
 
 namespace SpeechManager
@@ -27,6 +28,7 @@ namespace SpeechManager
         private string s_partner_ip = "127.0.0.1";
         private int listenPort = 60000;
         private int answerPort = 60001;
+        private string s_culture = "en-US";
 
         private int rec_time_sec = 20;
         private const int INTERVAL_MS = 100;
@@ -48,7 +50,7 @@ namespace SpeechManager
         private int t_wav_ct = 0;
         private int t_wav_ct_max = 0;
 
-        private SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
+        private SpeechRecognitionEngine recognizer;
         private SpeechSynthesizer synth = new SpeechSynthesizer();
         private string phrase = "this is a test";
         private int word_ct = 0;
@@ -62,11 +64,12 @@ namespace SpeechManager
             InitializeComponent();
         }
 
-        public Form1(string s, int rxPort, int txPort)
+        public Form1(string sipaddr, int rxPort, int txPort, string sculture)
         {
-            s_partner_ip = s;
+            s_partner_ip = sipaddr;
             listenPort = rxPort;
             answerPort = txPort;
+            s_culture = sculture;
             InitializeComponent();
         }
 
@@ -91,37 +94,50 @@ namespace SpeechManager
 
             // set up all the recognition stuff
 
+            try
+            {
+                recognizer =
+                    new SpeechRecognitionEngine(
+                        new System.Globalization.CultureInfo(s_culture));
+
+                recognizer.SpeechRecognized +=
+                    new EventHandler<SpeechRecognizedEventArgs>(
+                        sre_SpeechRecognized);
+                recognizer.RecognizeCompleted +=
+                    new EventHandler<RecognizeCompletedEventArgs>(
+                        sre_RecognizeCompletedHandler);
+                recognizer.SpeechRecognitionRejected +=
+                    new EventHandler<SpeechRecognitionRejectedEventArgs>(
+                        sre_SpeechRecognitionRejectedHandler);
+                recognizer.SpeechHypothesized +=
+                    new EventHandler<SpeechHypothesizedEventArgs>(
+                        sre_SpeechHypothesized);
+                recognizer.SpeechDetected +=
+                    new EventHandler<SpeechDetectedEventArgs>(
+                        sre_SpeechDetected);
+
+                recognizer.AudioSignalProblemOccurred +=
+                    new EventHandler<AudioSignalProblemOccurredEventArgs>(
+                        sre_AudioSignalProblemOccurred);
+                recognizer.AudioLevelUpdated +=
+                    new EventHandler<AudioLevelUpdatedEventArgs>(
+                        sre_AudioLevelUpdated);
+                recognizer.AudioStateChanged +=
+                    new EventHandler<AudioStateChangedEventArgs>(
+                        sre_AudioStateChanged);
+
+                // hope this magically picks whatever audio input is connected
+
+                recognizer.SetInputToDefaultAudioDevice();
+            }
+            catch (Exception ex)
+            {
+                textBoxUI.AppendText(
+                    "Error initializing speech recognition engine:" +
+                    Environment.NewLine + ex.Message + Environment.NewLine);
+            }
+
             loadSinglePhraseGrammar(phrase);
-
-            recognizer.SpeechRecognized +=
-                new EventHandler<SpeechRecognizedEventArgs>(
-                    sre_SpeechRecognized);
-            recognizer.RecognizeCompleted +=
-                new EventHandler<RecognizeCompletedEventArgs>(
-                    sre_RecognizeCompletedHandler);
-            recognizer.SpeechRecognitionRejected +=
-                new EventHandler<SpeechRecognitionRejectedEventArgs>(
-                    sre_SpeechRecognitionRejectedHandler);
-            recognizer.SpeechHypothesized +=
-                new EventHandler<SpeechHypothesizedEventArgs>(
-                    sre_SpeechHypothesized);
-            recognizer.SpeechDetected +=
-                new EventHandler<SpeechDetectedEventArgs>(
-                    sre_SpeechDetected);
-
-            recognizer.AudioSignalProblemOccurred +=
-                new EventHandler<AudioSignalProblemOccurredEventArgs>(
-                    sre_AudioSignalProblemOccurred);
-            recognizer.AudioLevelUpdated +=
-                new EventHandler<AudioLevelUpdatedEventArgs>(
-                    sre_AudioLevelUpdated);
-            recognizer.AudioStateChanged +=
-                new EventHandler<AudioStateChangedEventArgs>(
-                    sre_AudioStateChanged);
-
-            // hope this magically picks whatever audio input is connected
-
-            recognizer.SetInputToDefaultAudioDevice();
 
             textBoxUI.VisibleChanged += (x_sender, x_e) =>
             {
@@ -132,11 +148,14 @@ namespace SpeechManager
                 }
             };
 
-            // start the UDP command-response server
+            // echo command line parameters
 
             textBoxUI.AppendText("Partner: " + s_partner_ip + Environment.NewLine);
             textBoxUI.AppendText("RX Port: " + listenPort.ToString() + Environment.NewLine);
             textBoxUI.AppendText("TX Port: " + answerPort.ToString() + Environment.NewLine);
+            textBoxUI.AppendText("Culture: " + s_culture + Environment.NewLine);
+
+            // start the UDP command-response server
 
             theServer.Init(s_partner_ip, listenPort, answerPort);
             if (theServer.IsOK())
@@ -192,7 +211,9 @@ namespace SpeechManager
                 }
                 catch (Exception ex)
                 {
-                    textBoxUI.AppendText("Error playing WAV file:  " + ex.Message + Environment.NewLine);
+                    textBoxUI.AppendText(
+                        "Error playing WAV file:" + 
+                        Environment.NewLine + ex.Message + Environment.NewLine);
                 }
             }
         }
@@ -371,21 +392,29 @@ namespace SpeechManager
         private void loadSinglePhraseGrammar(string newPhrase)
         {
             phrase = newPhrase;
-            
-            // create a simple one-phrase grammar
-            Choices phraseChoice = new Choices();
-            phraseChoice.Add(new string[] {
-                newPhrase,
-            });
 
-            // create a GrammarBuilder and append the Choices object
-            GrammarBuilder gb = new GrammarBuilder();
-            gb.Append(phraseChoice);
+            try
+            {
+                // create a simple one-phrase grammar
+                Choices phraseChoice = new Choices();
+                phraseChoice.Add(new string[] { newPhrase });
 
-            // then create the Grammar instance and load it
-            // into the speech recognition engine.
-            Grammar g = new Grammar(gb);
-            recognizer.LoadGrammar(g);
+                // create a GrammarBuilder and append the Choices object
+                GrammarBuilder gb = new GrammarBuilder();
+                gb.Culture = new System.Globalization.CultureInfo(s_culture);
+                gb.Append(phraseChoice);
+
+                // then create the Grammar instance and load it
+                // into the speech recognition engine.
+                Grammar g = new Grammar(gb);
+                recognizer.LoadGrammar(g);
+            }
+            catch (Exception ex)
+            {
+                textBoxUI.AppendText(
+                    "Error initializing grammar:" +
+                    Environment.NewLine + ex.Message + Environment.NewLine);
+            }
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -598,7 +627,9 @@ namespace SpeechManager
                 }
                 catch (Exception ex)
                 {
-                    textBoxUI.AppendText("Error loading WAV file:  " + ex.Message + Environment.NewLine);
+                    textBoxUI.AppendText(
+                        "Error loading WAV file:" +
+                        Environment.NewLine + ex.Message + Environment.NewLine);
                 }
             }
             else
