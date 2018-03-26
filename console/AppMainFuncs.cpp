@@ -111,8 +111,10 @@ void AppMain::UIRecord(void)
 
 void AppMain::UIMakeMovie(void)
 {
-    std::cout << "(NOT SUPPORTED YET) Begin making movie" << std::endl;
-    //make_movie(record_path);
+    std::cout << "Generating movie.wmv file..." << std::endl;
+    std::list<std::string> listOfFiles;
+    util::GetListOfFiles(cfg.app.rec_path, "*.png", listOfFiles);
+    CVMain::make_movie(15.0, cfg.app.rec_path, listOfFiles);
     std::cout << "Finished" << std::endl;
     reset_fps();
 }

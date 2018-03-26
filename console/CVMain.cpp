@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include "opencv2/highgui/highgui.hpp"
 #include "CVMain.h"
 
 using namespace cv;
@@ -166,4 +167,29 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
     }
 
     return bFound;
+}
+
+void CVMain::make_movie(const double fps, const std::string& rspath, const std::list<std::string>& rListOfPNG)
+{
+    // determine size of frames
+    const std::string& rs = rListOfPNG.front();
+    Mat img = imread(rs);
+    Size img_sz = img.size();
+
+    std::string sname = rspath + "\\movie.wmv";
+
+    // build movie from separate frames
+    // TODO -- may need to change FPS on different systems
+    VideoWriter vw = VideoWriter(sname,
+        CV_FOURCC('W', 'M', 'V', '2'),
+        fps, img_sz);
+
+    if (vw.isOpened())
+    {
+        for (const auto& r : rListOfPNG)
+        {
+            Mat img = imread(r);
+            vw.write(img);
+        }
+    }
 }

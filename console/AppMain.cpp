@@ -223,7 +223,7 @@ void AppMain::show_help()
     std::cout << util::GetKeyHelpString(KEY_HALT, IDS_HELP_KEY_HALT) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_LISTEN, IDS_HELP_KEY_LISTEN) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_VIDREC, IDS_HELP_KEY_VIDREC) << std::endl;
-    //std::cout << util::GetKeyHelpString(KEY_NEWMOV, IDS_HELP_KEY_NEWMOV) << std::endl;
+    std::cout << util::GetKeyHelpString(KEY_NEWMOV, IDS_HELP_KEY_NEWMOV) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_ZOOMGT, IDS_HELP_KEY_ZOOMGT) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_ZOOMLT, IDS_HELP_KEY_ZOOMLT) << std::endl;
     std::cout << util::GetKeyHelpString(KEY_ZOOM0, IDS_HELP_KEY_ZOOM0) << std::endl;

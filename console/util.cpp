@@ -2,7 +2,8 @@
 #include "resource.h"
 #include "Shlwapi.h"
 
-
+#include <list>
+#include <iostream>
 #include <sstream>
 #include "util.h"
 
@@ -33,42 +34,30 @@ namespace util
         return (result) ? true : false;
     }
 
+    void GetListOfFiles(
+        const std::string& rsdir,
+        const std::string& rspattern,
+        std::list<std::string>& listOfFiles)
+    {
+        std::string s = rsdir + "\\" + rspattern;
 
-    ///@TODO -- port this old python code to C++ someday
+        WIN32_FIND_DATA search_data;
+        memset(&search_data, 0, sizeof(WIN32_FIND_DATA));
 
-    /*
+        std::wstring ws(s.begin(), s.end());
+        HANDLE handle = FindFirstFile(ws.data(), &search_data);
 
-    void AppMain::make_movie(img_path):
-    """Generate an MOV file from a directory of PNG files."""
+        while (handle != INVALID_HANDLE_VALUE)
+        {
+            std::wstring wsfile(search_data.cFileName);
+            std::string sfile(wsfile.begin(), wsfile.end());
+            listOfFiles.push_back(rsdir + "\\" + sfile);
+            if (FindNextFile(handle, &search_data) == FALSE)
+            {
+                break;
+            }
+        }
 
-    // gather file names of frames
-    img_files = []
-    for (dirpath, dirnames, filenames) in os.walk(img_path):
-    img_files.extend(filenames)
-    break
-
-    // only consider PNG files
-    img_files = [each for each in img_files if each.rfind(".png") > 0]
-    if len(img_files) == 0:
-    std::cout << "No PNG files found!"
-    return
-
-    // determine size of frames
-    file_path = os.path.join(img_path, img_files[0])
-    size = cv.GetSize(cv.LoadImage(file_path))
-
-    // build movie from separate frames
-    // TODO -- may need to change FPS on different systems
-    fps = 15
-    movie_path = os.path.join(img_path, "movie.mov")
-    video_maker = VideoWriter(movie_path,
-    cv.CV_FOURCC('m', 'p', '4', 'v'),
-    fps, size)
-    if video_maker.isOpened()
-    for each in img_files:
-    file_path = os.path.join(img_path, each)
-    img = imread(file_path)
-    video_maker.write(img)
-    */
-
+        FindClose(handle);
+    }
 }

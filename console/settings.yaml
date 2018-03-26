@@ -5,7 +5,7 @@ app:
    zoom_max: 4
    com_port: COM2
    rec_path: "C:\\work\\movie"
-   cascade_path: "C:\\opencv-3.3.0\\opencv\\build\\etc\\haarcascades\\"
+   cascade_path: "C:\\opencv-3.4.1\\opencv\\build\\etc\\haarcascades\\"
    img_scale_fac: 0.75
 loop:
    ext_on_ct: 15
