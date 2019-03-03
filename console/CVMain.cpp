@@ -136,7 +136,7 @@ bool CVMain::detect(cv::Mat& r, FaceInfo& rFaceInfo)
             // try to find grin in mouth area
             // use magic parameter to tune
 
-            int magic = (rFaceInfo.smile_thr * 4) + 1;
+            int magic = (rFaceInfo.smile_thr * 5) + 1;
 
             Mat grinROI = r(rFaceInfo.rect_grin_roi);
 
@@ -181,7 +181,7 @@ void CVMain::make_movie(const double fps, const std::string& rspath, const std::
     // build movie from separate frames
     // TODO -- may need to change FPS on different systems
     VideoWriter vw = VideoWriter(sname,
-        CV_FOURCC('W', 'M', 'V', '2'),
+        VideoWriter::fourcc('W', 'M', 'V', '2'),
         fps, img_sz);
 
     if (vw.isOpened())

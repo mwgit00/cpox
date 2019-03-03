@@ -255,7 +255,7 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
 
     // draw status label in upper left
     // along with status color
-    rectangle(img_final, Rect(0, 0, wn, hn), status_color, CV_FILLED);
+    rectangle(img_final, Rect(0, 0, wn, hn), status_color, cv::LineTypes::FILLED);
     rectangle(img_final, Rect(0, 0, wn, hn), SCA_WHITE);
     putText(img_final, s_label, Point(10, 14), FONT_HERSHEY_PLAIN, 1.0,
         SCA_WHITE, 2);
@@ -269,25 +269,25 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         s_srx = s_strikes;
     }
     rectangle(img_final, Rect(Point(0, hn * 1), Point(wn, hn * 2)),
-        speech_mode_color, CV_FILLED);
+        speech_mode_color, cv::LineTypes::FILLED);
     rectangle(img_final, Rect(Point(0, hn * 1), Point(wn, hn * 2)),
         SCA_WHITE);
     putText(img_final, s_srx, Point(10, hn * 1 + 14),
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
 
     // eye and smile mode state icon box
-    rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)), SCA_PURPLE, CV_FILLED);
+    rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)), SCA_PURPLE, cv::LineTypes::FILLED);
     rectangle(img_final, Rect(Point(0, hn * 2), Point(wn, hn * 3)), SCA_WHITE);
 
     // smile threshold
-    rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)), SCA_PURPLE, CV_FILLED);
+    rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)), SCA_PURPLE, cv::LineTypes::FILLED);
     rectangle(img_final, Rect(Point(0, hn * 3), Point(wn, hn * 4)), SCA_WHITE);
-    rectangle(img_final, Rect(Point(2, (hn * 3) + 2), Point(cfg.loop.smile_thr + 2, (hn * 4) - 2)), SCA_BLUE_GREEN, CV_FILLED);
+    rectangle(img_final, Rect(Point(2, (hn * 3) + 2), Point(cfg.loop.smile_thr + 2, (hn * 4) - 2)), SCA_BLUE_GREEN, cv::LineTypes::FILLED);
 
     // frames per second and recording status
     Scalar fps_color = (is_record_enabled) ? SCA_RED : SCA_BLACK;
     rectangle(img_final, Rect(Point(0, hn * 4), Point(wn, hn * 5)),
-        fps_color, CV_FILLED);
+        fps_color, cv::LineTypes::FILLED);
     rectangle(img_final, Rect(Point(0, hn * 4), Point(wn, hn * 5)),
         SCA_WHITE);
     putText(img_final, rsfps, Point(10, (hn * 4) + 14),
@@ -296,11 +296,11 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
     // COM status, output level and blue blinky for link status
     Scalar com_color = (is_com_up) ? SCA_PURPLE : SCA_GRAY;
     rectangle(img_final, Rect(Point(0, hn * 5), Point(wn, hn * 6)),
-        com_color, CV_FILLED);
+        com_color, cv::LineTypes::FILLED);
     rectangle(img_final, Rect(Point(0, hn * 5), Point(wn, hn * 6)),
         SCA_WHITE);
     rectangle(img_final, Rect(Point(4, (hn * 5) + 4), Point(4 + 12, (hn * 6) - 4)),
-        is_com_blinky_on ? SCA_BLUE_GREEN : SCA_BLACK, CV_FILLED);
+        is_com_blinky_on ? SCA_BLUE_GREEN : SCA_BLACK, cv::LineTypes::FILLED);
     putText(img_final, s_com_ack, Point(24, hn * 5 + 14),
         FONT_HERSHEY_PLAIN, 1.0, SCA_WHITE, 2);
 
@@ -316,8 +316,8 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         int x2 = wn + (rec_sec - x) * wb;
         int x3 = wn + rec_sec * wb;
         int xtrg = x1 + 12 * wb;
-        rectangle(img_final, Rect(Point(x1, 0), Point(x2, hn)), SCA_GRAY, CV_FILLED);
-        rectangle(img_final, Rect(Point(x2, 0), Point(x3, hn)), SCA_BLACK, CV_FILLED);
+        rectangle(img_final, Rect(Point(x1, 0), Point(x2, hn)), SCA_GRAY, cv::LineTypes::FILLED);
+        rectangle(img_final, Rect(Point(x2, 0), Point(x3, hn)), SCA_BLACK, cv::LineTypes::FILLED);
         line(img_final, Point(xtrg, 0), Point(xtrg, hn - 1), SCA_YELLOW);
         rectangle(img_final, Rect(Point(x1, 0), Point(x3, hn)), SCA_WHITE);
     }
@@ -328,12 +328,12 @@ void AppMain::show_monitor_window(cv::Mat& img, FaceInfo& rFI, const std::string
         int e_y = (hn * 2) + 8;
         int e_x = 8;
         int e_dx = 8;
-        circle(img_final, Point(e_x, e_y), 3, sca_eyes, CV_FILLED);
-        circle(img_final, Point(e_x + e_dx, e_y), 3, sca_eyes, CV_FILLED);
+        circle(img_final, Point(e_x, e_y), 3, sca_eyes, cv::LineTypes::FILLED);
+        circle(img_final, Point(e_x + e_dx, e_y), 3, sca_eyes, cv::LineTypes::FILLED);
         if (cfg.loop.eyes_flag)
         {
-            circle(img_final, Point(e_x, e_y), 1, SCA_BLACK, CV_FILLED);
-            circle(img_final, Point(e_x + e_dx, e_y), 1, SCA_BLACK, CV_FILLED);
+            circle(img_final, Point(e_x, e_y), 1, SCA_BLACK, cv::LineTypes::FILLED);
+            circle(img_final, Point(e_x + e_dx, e_y), 1, SCA_BLACK, cv::LineTypes::FILLED);
         }
     }
 
