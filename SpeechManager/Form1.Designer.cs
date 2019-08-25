@@ -185,7 +185,7 @@
             0,
             0});
             this.numericUpDownMinScore.Minimum = new decimal(new int[] {
-            75,
+            50,
             0,
             0,
             0});
@@ -405,7 +405,7 @@
             this.MaximumSize = new System.Drawing.Size(482, 720);
             this.MinimumSize = new System.Drawing.Size(482, 266);
             this.Name = "Form1";
-            this.Text = "Speech Manager 1.1";
+            this.Text = "Speech Manager 1.2";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);

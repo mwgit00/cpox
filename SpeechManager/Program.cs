@@ -18,6 +18,7 @@ namespace SpeechManager
             int rxPort = 60000;
             int txPort = 60001;
             string sculture = "en-US";
+            string sgender = "f";
 
             if (args.Length >= 1)
             {
@@ -39,9 +40,14 @@ namespace SpeechManager
                 sculture = args[3];
             }
 
+            if (args.Length >= 5)
+            {
+                sgender = args[4];
+            }
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1(sipaddr, rxPort, txPort, sculture));
+            Application.Run(new Form1(sipaddr, rxPort, txPort, sculture, sgender));
         }
     }
 }

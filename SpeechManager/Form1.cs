@@ -29,6 +29,7 @@ namespace SpeechManager
         private int listenPort = 60000;
         private int answerPort = 60001;
         private string s_culture = "en-US";
+        private string s_gender = "f";  // m(ale) or f(emale)
 
         private int rec_time_sec = 20;
         private const int INTERVAL_MS = 100;
@@ -64,12 +65,13 @@ namespace SpeechManager
             InitializeComponent();
         }
 
-        public Form1(string sipaddr, int rxPort, int txPort, string sculture)
+        public Form1(string sipaddr, int rxPort, int txPort, string sculture, string sgender)
         {
             s_partner_ip = sipaddr;
             listenPort = rxPort;
             answerPort = txPort;
             s_culture = sculture;
+            s_gender = sgender;
             InitializeComponent();
         }
 
@@ -79,10 +81,23 @@ namespace SpeechManager
 
             sounder.LoadCompleted +=
                 new AsyncCompletedEventHandler(snd_LoadCompleted);
-            
+
             // set up all the speech synthesis stuff
 
-            synth.SelectVoiceByHints(VoiceGender.Female);
+            // a Windows 10 system might have only 2 voices installed
+            // "Microsoft David Desktop"
+            // "Microsoft Zira Desktop"
+            // so just pick a voice by command param gender hint
+
+            if (s_gender.StartsWith("m"))
+            {
+                synth.SelectVoiceByHints(VoiceGender.Male);
+            }
+            else
+            {
+                synth.SelectVoiceByHints(VoiceGender.Female);
+            }
+
             synth.SetOutputToDefaultAudioDevice();
 
             synth.SpeakStarted +=
@@ -148,12 +163,22 @@ namespace SpeechManager
                 }
             };
 
+            // display installed voices available to this application in case user wants to know
+
+            textBoxUI.AppendText("Installed voices:" + Environment.NewLine);
+            foreach (InstalledVoice voice in synth.GetInstalledVoices())
+            {
+                VoiceInfo info = voice.VoiceInfo;
+                textBoxUI.AppendText(" - " + info.Name + ", " + info.Culture + Environment.NewLine);
+            }
+            
             // echo command line parameters
 
             textBoxUI.AppendText("Partner: " + s_partner_ip + Environment.NewLine);
             textBoxUI.AppendText("RX Port: " + listenPort.ToString() + Environment.NewLine);
             textBoxUI.AppendText("TX Port: " + answerPort.ToString() + Environment.NewLine);
             textBoxUI.AppendText("Culture: " + s_culture + Environment.NewLine);
+            textBoxUI.AppendText("Gender:  " + s_gender + Environment.NewLine);
 
             // start the UDP command-response server
 
