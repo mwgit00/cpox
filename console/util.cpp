@@ -5,19 +5,38 @@
 #include <list>
 #include <iostream>
 #include <sstream>
+#include <locale>
+#include <codecvt>
+
 #include "util.h"
 
 namespace util
 {
-    std::string GetString(const int nIDS)
+	// straight off of stackoverflow
+	std::wstring s2ws(const std::string& str)
+	{
+		using convert_typeX = std::codecvt_utf8<wchar_t>;
+		std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+		return converterX.from_bytes(str);
+	}
+	
+	// straight off of stackoverflow
+	std::string ws2s(const std::wstring& wstr)
+	{
+		using convert_typeX = std::codecvt_utf8<wchar_t>;
+		std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+		return converterX.to_bytes(wstr);
+	}
+    
+	std::string GetString(const int nIDS)
     {
         const int STR_MAX_SIZE = 256;
         static TCHAR buff[STR_MAX_SIZE];
 
         ::LoadString(::GetModuleHandle(NULL), nIDS, buff, STR_MAX_SIZE);
-        std::wstring ws(buff);
-
-        return std::string(ws.begin(), ws.end());
+		return ws2s(std::wstring(buff));
     }
 
     std::string GetKeyHelpString(const char key, const int nIDS)
@@ -44,13 +63,13 @@ namespace util
         WIN32_FIND_DATA search_data;
         memset(&search_data, 0, sizeof(WIN32_FIND_DATA));
 
-        std::wstring ws(s.begin(), s.end());
+		std::wstring ws = s2ws(s);
         HANDLE handle = FindFirstFile(ws.data(), &search_data);
 
         while (handle != INVALID_HANDLE_VALUE)
         {
             std::wstring wsfile(search_data.cFileName);
-            std::string sfile(wsfile.begin(), wsfile.end());
+			std::string sfile = ws2s(wsfile);
             listOfFiles.push_back(rsdir + "\\" + sfile);
             if (FindNextFile(handle, &search_data) == FALSE)
             {

@@ -504,7 +504,7 @@ void AppMain::Go()
 {
     std::string settings_file = "settings.yaml";
     
-    std::cout << "*** CPOX for Windows 7 64-Bit OS ***" << std::endl;
+    std::cout << "*** CPOX for Windows 64-Bit OS ***" << std::endl;
 
     if (!cfg.Read(settings_file))
     {
